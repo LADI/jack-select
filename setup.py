@@ -10,8 +10,8 @@ setuptools.setup(
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
-    description="A systray appl to quickly change the JACK-DBus configuration "
-                "from QJackCtl presets",
+    description="A systray app to set the JACK configuration from QJackCtl "
+                "presets via DBus",
     keywords="JACK,systray,GTK",
     packages=setuptools.find_packages(),
     include_package_data=True,
@@ -34,6 +34,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Environment :: X11 Applications :: GTK',
         'Topic :: Multimedia :: Sound/Audio'
     ],
 )

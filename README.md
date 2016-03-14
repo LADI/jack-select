@@ -1,7 +1,7 @@
 # jack-select
 
-A systray application to quickly change the [JACK] configuration from
-QJackCtl presets via DBus.
+A systray application to quickly change the [JACK] configuration from QJackCtl
+presets via DBus.
 
 This application displays an icon in the system tray (also known as
 notification area) of your desktop, which shows the status of the JACK audio
