@@ -13,8 +13,9 @@ between different audio setups with just two clicks.
 
 ![Screenshot of the pop menu](screenshot.png)
 
-When you hover over the systray icon and JACK is running, a tooltup will show
-you the most important paramters of the current setup.
+When you hover with the mouse pointer over the systray icon and JACK is
+running, a tooltip will show you the most important parameters of the current
+setup.
 
 ![Server status tooltip](tooltip.png)
 
@@ -41,4 +42,4 @@ Python 2 is not supported.
 
 [JACK]: http://jackaudio.org/
 [GObject]: https://wiki.gnome.org/Projects/PyGObject
-[QJackCtl]: http://qjackctl.sourceforge.net/)
+[QJackCtl]: http://qjackctl.sourceforge.net/
