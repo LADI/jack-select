@@ -30,16 +30,18 @@ Requirements
 
 This application works with the DBus-version of JACK only.
 
-This application is written in Python 3 using the [Gobject] bindings. In
-addition to `python-gobject` the following third-party Python libraries are
-required:
+It written in Python 3 using the [PyGobject] bindings for GTK 3. In addition to
+`python-gobject` the following third-party Python libraries are required:
 
-* [python-xdg](http://freedesktop.org/Software/pyxdg)
-* [python-dbus](https://www.freedesktop.org/wiki/Software/DBusBindings/)
+* [pyxdg](http://freedesktop.org/Software/pyxdg)
+* [dbus-python](https://www.freedesktop.org/wiki/Software/DBusBindings/)
+
+These may be available from the package repository of your distribution as
+`python-xdg` and `python-dbus` respectively.
 
 Python 2 is not supported.
 
 
 [JACK]: http://jackaudio.org/
-[GObject]: https://wiki.gnome.org/Projects/PyGObject
+[PyGObject]: https://wiki.gnome.org/Projects/PyGObject
 [QJackCtl]: http://qjackctl.sourceforge.net/
