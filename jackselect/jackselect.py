@@ -220,8 +220,9 @@ class JackSelectApp:
 
 def main():
     """Main function to be used when called as a script."""
-    logging.basicConfig(level=logging.DEBUG,
-                        format="[%(name)s] %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if '-v' in sys.argv[1:] else logging.INFO,
+        format="[%(name)s] %(levelname)s: %(message)s")
     JackSelectApp()
     return Gtk.main()
 
