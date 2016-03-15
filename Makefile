@@ -15,3 +15,6 @@ install-user:
 	$(PYTHON) setup.py install --user
 	$(INSTALL) -Dm644 jack-select.png $(HOME)/.local/share/icons/hicolor/48x48/apps
 	$(INSTALL) -Dm644 jack-select.desktop $(HOME)/.local/share/applications/
+
+pypi-upload:
+	$(PYTHON) setup.py sdist --formats=bztar,zip wheel upload
