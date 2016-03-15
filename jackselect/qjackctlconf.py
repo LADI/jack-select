@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Read JACK presets and their settings from QJackCtl's configuration file."""
+"""Read JACK presets and their settings from QjackCtl's configuration file."""
 
 import configparser
 import logging

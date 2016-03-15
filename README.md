@@ -1,12 +1,12 @@
 # jack-select
 
-A systray application to quickly change the [JACK] configuration from QJackCtl
+A systray application to quickly change the [JACK] configuration from QjackCtl
 presets via DBus.
 
 This application displays an icon in the system tray (also known as
 notification area) of your desktop, which shows the status of the JACK audio
 server and when you click on it, a menu pops up which lets you quickly select
-from the JACK configuration presets you created with [QJackCtl]. When you
+from the JACK configuration presets you created with [QjackCtl]. When you
 select a preset, its JACK engine and driver configuration settings are loaded
 via DBus into JACK and then the server is restarted. This allows you to switch
 between different audio setups with just two mouse clicks.
@@ -22,7 +22,7 @@ setup.
 Lastly, there are menu entries to stop the JACK server and to quit the
 application.
 
-To create or edit presets, just use the QJackCtl configuration dialog and make
+To create or edit presets, just use the QjackCtl configuration dialog and make
 sure you close it with "Ok" so the changes are saved. jack-select will pick up
 the changes automatically.
 
@@ -74,4 +74,4 @@ Python 2 is not supported.
 
 [JACK]: http://jackaudio.org/
 [PyGObject]: https://wiki.gnome.org/Projects/PyGObject
-[QJackCtl]: http://qjackctl.sourceforge.net/
+[QjackCtl]: http://qjackctl.sourceforge.net/

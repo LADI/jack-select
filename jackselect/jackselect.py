@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""A systray app to set the JACK configuration from QJackCtl presets via DBus.
+"""A systray app to set the JACK configuration from QjackCtl presets via DBus.
 """
 
 import logging

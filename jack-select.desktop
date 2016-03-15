@@ -2,7 +2,7 @@
 Encoding=UTF-8
 Type=Application
 Name=JACK-Select
-Comment=A systray app to set the JACK configuration from QJackCtl presets via DBus
+Comment=A systray app to set the JACK configuration from QjackCtl presets via DBus
 Exec=jack-select
 Icon=jack-select
 Terminal=false
