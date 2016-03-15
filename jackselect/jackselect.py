@@ -138,7 +138,7 @@ class JackSelectApp:
 
     def create_menu(self):
         self.gui.menu = Gtk.Menu()
-        for preset in self.presets:
+        for preset in sorted(self.presets):
             self.gui.add_menu_item(self.activate_preset, preset)
 
         self.gui.add_separator()
