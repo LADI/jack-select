@@ -17,4 +17,4 @@ install-user:
 	$(INSTALL) -Dm644 jack-select.desktop $(HOME)/.local/share/applications/
 
 pypi-upload:
-	$(PYTHON) setup.py sdist --formats=bztar,zip wheel upload
+	$(PYTHON) setup.py sdist --formats=bztar,zip bdist_wheel upload
