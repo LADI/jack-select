@@ -27,7 +27,7 @@ setuptools.setup(
     },
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Intended Audience :: End users',
+        'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX',
         'Programming Language :: Python',
