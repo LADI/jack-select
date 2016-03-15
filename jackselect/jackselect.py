@@ -11,6 +11,8 @@ os.environ['NO_AT_BRIDGE'] = "1"
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
+from gi.repository.GdkPixbuf import Pixbuf
+
 
 from pkg_resources import resource_filename
 from xdg import BaseDirectory as xdgbase
@@ -20,11 +22,6 @@ from .qjackctlconf import get_qjackctl_presets
 
 
 log = logging.getLogger('jack-select')
-
-
-def get_image(name):
-    """Load get image location from package."""
-    return resource_filename("jackselect", "images/%s" % name)
 
 
 class Indicator:
@@ -40,13 +37,12 @@ class Indicator:
           icon (str): path to initial icon that will be shown on system panel
 
         """
-        self.appicon = icon
-        self.icon = Gtk.StatusIcon.new_from_file(get_image(icon))
+        self._icon_cache = {}
+        self.icon = Gtk.StatusIcon.new_from_pixbuf(self._get_icon(icon))
 
         self.menu = Gtk.Menu()
         self.icon.connect('activate', self.on_popup_menu_open)
         self.icon.connect('popup-menu', self.on_popup_menu_open)
-        self._icon_cache = {}
 
     def set_refresh(self, timeout, callback, *callback_args):
         """A simple wrapper to simplify setting a timeout.
@@ -62,6 +58,20 @@ class Indicator:
         """
         GObject.timeout_add(timeout, callback, *callback_args)
 
+    def _get_icon(self, icon):
+        """Return icon from package as GdkPixbuf.Pixbuf.
+
+        Extracts the image from package to a file, stores it in the icon cache
+        if it's not in there yet and returns it. Otherwise just returns the
+        image stored in the cache.
+
+        """
+        if icon not in self._icon_cache:
+            filename = resource_filename("jackselect", "images/%s" % icon)
+            self._icon_cache[icon] = Pixbuf.new_from_file(filename)
+
+        return self._icon_cache[icon]
+
     def set_icon(self, icon):
         """Set new icon in system tray.
 
@@ -69,10 +79,7 @@ class Indicator:
           icon (str): path to file with new icon
 
         """
-        if icon not in self._icon_cache:
-            self._icon_cache[icon] = get_image(icon)
-
-        self.icon.set_from_file(self._icon_cache[icon])
+        self.icon.set_from_pixbuf(self._get_icon(icon))
 
     def add_menu_item(self, command, title=None, icon=None):
         """Add mouse right click menu item.
@@ -84,11 +91,9 @@ class Indicator:
 
         """
         if icon:
-            if isinstance(icon, Gtk.Image):
-                m_item = Gtk.ImageMenuItem(title)
-                m_item.set_image(icon)
-            else:
-                m_item = Gtk.ImageMenuItem(icon, title)
+            m_item = Gtk.ImageMenuItem(title)
+            image = Gtk.Image.new_from_pixbuf(self._get_icon(icon))
+            m_item.set_image(image)
         else:
             m_item = Gtk.MenuItem()
             m_item.set_label(title)
@@ -98,7 +103,7 @@ class Indicator:
         return m_item
 
     def add_separator(self):
-        """Add separator between labels in the right-click menu."""
+        """Add separator between labels in the popup menu."""
         m_item = Gtk.SeparatorMenuItem()
         self.menu.append(m_item)
         self.menu.show_all()
@@ -137,12 +142,11 @@ class JackSelectApp:
 
         self.gui.add_separator()
         self.menu_stop = self.gui.add_menu_item(
-            self.stop_jack_server, "Stop JACK Server",
-            icon=Gtk.Image.new_from_file(get_image('stop.png')))
+            self.stop_jack_server, "Stop JACK Server", icon='stop.png')
         self.gui.add_separator()
         self.menu_quit = self.gui.add_menu_item(
             lambda x: Gtk.main_quit(), "Quit",
-            icon=Gtk.Image.new_from_file(get_image('quit.png')))
+            icon='quit.png')
         self.gui.menu.show_all()
 
     def check_jack_status(self):
