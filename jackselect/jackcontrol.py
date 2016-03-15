@@ -35,9 +35,10 @@ SETTINGS = {
 }
 
 
-def get_jack_controller():
-    return dbus.SessionBus().get_object("org.jackaudio.service",
-                                        "/org/jackaudio/Controller")
+def get_jack_controller(bus=None):
+    if not bus:
+        bus = dbus.SessionBus()
+    return bus.get_object("org.jackaudio.service", "/org/jackaudio/Controller")
 
 
 class JackCfgInterface:
