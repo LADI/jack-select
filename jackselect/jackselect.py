@@ -67,7 +67,7 @@ class Indicator:
         """
         self.icon.set_from_pixbuf(self._get_icon(icon))
 
-    def add_menu_item(self, command, title=None, icon=None):
+    def add_menu_item(self, command=None, title=None, icon=None):
         """Add mouse right click menu item.
 
         Args:
@@ -84,7 +84,9 @@ class Indicator:
             m_item = Gtk.MenuItem()
             m_item.set_label(title)
 
-        m_item.connect('activate', command)
+        if command:
+            m_item.connect('activate', command)
+
         self.menu.append(m_item)
         return m_item
 
@@ -113,6 +115,7 @@ class JackSelectApp:
         dbus_obj = get_jack_controller()
         self.jackctl = JackCtlInterface(dbus_obj)
         self.jackcfg = JackCfgInterface(dbus_obj)
+        self.presets = None
         self.load_presets()
         GObject.timeout_add(1000, self.load_presets)
         GObject.timeout_add(500, self.check_jack_status)
@@ -122,7 +125,8 @@ class JackSelectApp:
 
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
-            if mtime > getattr(self, '_qjackctl_conf_modified', 0):
+            if (not self.presets or
+                    mtime > getattr(self, '_qjackctl_conf_modified', 0)):
                 (
                     self.presets,
                     self.settings,
@@ -131,16 +135,23 @@ class JackSelectApp:
                 self._qjackctl_conf_modified = mtime
                 self.create_menu()
         else:
-            self.presets = []
-            self.settings = {}
-            self.default_preset = None
+            if self.presets or self.presets is None:
+                self.presets = []
+                self.settings = {}
+                self.default_preset = None
+                self.create_menu()
 
         return True  # keep function scheduled
 
     def create_menu(self):
         self.gui.menu = Gtk.Menu()
-        for preset in sorted(self.presets):
-            self.gui.add_menu_item(self.activate_preset, preset)
+
+        if self.presets:
+            for preset in sorted(self.presets):
+                self.gui.add_menu_item(self.activate_preset, preset)
+        else:
+            item = self.gui.add_menu_item(None, "No presets found")
+            item.set_sensitive(False)
 
         self.gui.add_separator()
         self.menu_stop = self.gui.add_menu_item(
