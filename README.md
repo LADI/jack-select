@@ -35,7 +35,7 @@ requirements below and then run:
 
     $ git clone https://github.com/SpotlightKid/jack-select
     $ cd jack-select
-    $ make PREFIX=/usr install
+    $ [sudo] make PREFIX=/usr install
 
 This will install the `jack-select` program, the `jackselect` Python package
 and the `jack-select.desktop` file and the `jack-select.png` icon to provide a
