@@ -44,20 +44,6 @@ class Indicator:
         self.icon.connect('activate', self.on_popup_menu_open)
         self.icon.connect('popup-menu', self.on_popup_menu_open)
 
-    def set_refresh(self, timeout, callback, *callback_args):
-        """A simple wrapper to simplify setting a timeout.
-
-        Args:
-          timeout (int): timeout in milliseconds, after which callback will
-          be called
-          callback (callable): usually, just a function that will be called
-          each time after timeout
-          *callback_args (any type): arguments that will be passed to callback
-          function
-
-        """
-        GObject.timeout_add(timeout, callback, *callback_args)
-
     def _get_icon(self, icon):
         """Return icon from package as GdkPixbuf.Pixbuf.
 
@@ -67,7 +53,7 @@ class Indicator:
 
         """
         if icon not in self._icon_cache:
-            filename = resource_filename("jackselect", "images/%s" % icon)
+            filename = resource_filename(__name__, "images/%s" % icon)
             self._icon_cache[icon] = Pixbuf.new_from_file(filename)
 
         return self._icon_cache[icon]
@@ -121,28 +107,44 @@ class JackSelectApp:
         self.gui = Indicator('jack.png')
         self.gui.icon.set_has_tooltip(True)
         self.gui.icon.connect("query-tooltip", self.tooltip_query)
-        self.presets = []
-        self.settings = {}
         self.jack_is_started = None
         self.status = "No status available"
-        self.create_menu()
-        self.jackdbsu = None
-        self.refresh_timeout = 500
-        self.gui.set_refresh(self.refresh_timeout, self.check_jack_status)
+        self.jackdbus = None
         self.jackctl = get_jack_controller()
         self.jackcfg = JackCfgInterface(self.jackctl)
+        self.load_presets()
+        GObject.timeout_add(1000, self.load_presets)
+        GObject.timeout_add(500, self.check_jack_status)
 
-    def create_menu(self):
+    def load_presets(self):
         qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
 
         if qjackctl_conf:
-            self.presets, self.settings, _ = get_qjackctl_presets(qjackctl_conf)  # noqa
-            for preset in self.presets:
-                self.gui.add_menu_item(self.activate_preset, preset)
+            mtime = os.path.getmtime(qjackctl_conf)
+            if mtime > getattr(self, '_qjackctl_conf_modified', 0):
+                (
+                    self.presets,
+                    self.settings,
+                    self.default_preset
+                ) = get_qjackctl_presets(qjackctl_conf)
+                self._qjackctl_conf_modified = mtime
+                self.create_menu()
+        else:
+            self.presets = []
+            self.settings = {}
+            self.default_preset = None
+
+        return True  # keep function scheduled
+
+    def create_menu(self):
+        self.gui.menu = Gtk.Menu()
+        for preset in self.presets:
+            self.gui.add_menu_item(self.activate_preset, preset)
 
         self.gui.add_separator()
         self.menu_stop = self.gui.add_menu_item(
             self.stop_jack_server, "Stop JACK Server", icon='stop.png')
+        self.menu_stop.set_sensitive(bool(self.jack_is_started))
         self.gui.add_separator()
         self.menu_quit = self.gui.add_menu_item(
             lambda x: Gtk.main_quit(), "Quit",
@@ -172,7 +174,7 @@ class JackSelectApp:
                 self.jack_is_started = False
 
         self.menu_stop.set_sensitive(self.jack_is_started)
-        return True
+        return True  # keep function scheduled
 
     def tooltip_query(self, widget, x, y, keyboard_mode, tooltip):
         """Set tooltip for the systray icon."""
