@@ -3,6 +3,8 @@
 
 import logging
 
+from functools import partial
+
 import dbus
 
 
@@ -41,13 +43,67 @@ def get_jack_controller(bus=None):
     return bus.get_object("org.jackaudio.service", "/org/jackaudio/Controller")
 
 
-class JackCfgInterface:
-    def __init__(self, jackctl):
-        self._dbus = dbus.Interface(jackctl, "org.jackaudio.Configure")
+class JackBaseInterface:
+    def __init__(self, jackctl=None):
+        if not jackctl:
+            jackctl = get_jack_controller()
+
+        self._if = dbus.Interface(jackctl, self.interface)
+
+    def _async_handler(self, *args, **kw):
+        name = kw.get('name')
+        callback = kw.get('callback')
+
+        if args and isinstance(args[0], dbus.DBusException):
+            log.error("Async call failed name=%s: %s", name, args[0])
+            return
+
+        if callback:
+            callback(*args, name=name)
+
+    def call_async(self, meth, name, callback=None, *args):
+        if callback:
+            handler = partial(self._async_handler, callback=callback, name=name)
+            kw = dict(reply_handler=handler, error_handler=handler)
+        else:
+            kw = {}
+        return getattr(self._if, meth)(*args, **kw)
+
+
+class JackCtlInterface(JackBaseInterface):
+    interface = "org.jackaudio.JackControl"
+
+    def is_started(self, cb=None):
+        return self.call_async('IsStarted', 'is_started', cb)
+
+    def start_server(self, cb=None):
+        return self.call_async('StartServer', 'start_server', cb)
+
+    def stop_server(self, cb=None):
+        return self.call_async('StopServer', 'stop_server', cb)
+
+    def get_latency(self, cb=None):
+        return self.call_async('GetLatency', 'latency', cb)
+
+    def get_load(self, cb=None):
+        return self.call_async('GetLoad', 'load', cb)
+
+    def get_period(self, cb=None):
+        return self.call_async('GetBufferSize', 'period', cb)
+
+    def get_sample_rate(self, cb=None):
+        return self.call_async('GetSampleRate', 'samplerate', cb)
+
+    def get_xruns(self, cb=None):
+        return self.call_async('GetXruns', 'xruns', cb)
+
+
+class JackCfgInterface(JackBaseInterface):
+    interface = "org.jackaudio.Configure"
 
     def engine_has_feature(self, feature):
         try:
-            features = self._dbus.ReadContainer(["driver"])[1]
+            features = self._if.ReadContainer(["driver"])[1]
         except:
             features = ()
         return dbus.String(feature) in features
@@ -57,7 +113,7 @@ class JackCfgInterface:
             return fallback
         else:
             try:
-                return self._dbus.GetParameterValue(["engine", parameter])[2]
+                return self._if.GetParameterValue(["engine", parameter])[2]
             except:
                 return fallback
 
@@ -65,23 +121,23 @@ class JackCfgInterface:
         if not self.engine_has_feature(parameter):
             return False
         elif optional:
-            pvalue = self._dbus.GetParameterValue(["engine", parameter])
+            pvalue = self._if.GetParameterValue(["engine", parameter])
 
             if pvalue is None:
                 return False
 
             if value != pvalue[2]:
-                return bool(self._dbus.SetParameterValue(["engine", parameter],
-                                                         value))
+                return bool(self._if.SetParameterValue(["engine", parameter],
+                                                       value))
             else:
                 return False
         else:
-            return bool(self._dbus.SetParameterValue(["engine", parameter],
-                                                     value))
+            return bool(self._if.SetParameterValue(["engine", parameter],
+                                                   value))
 
     def driver_has_feature(self, feature):
         try:
-            features = self._dbus.ReadContainer(["driver"])[1]
+            features = self._if.ReadContainer(["driver"])[1]
         except:
             features = ()
         return dbus.String(feature) in features
@@ -91,7 +147,7 @@ class JackCfgInterface:
             return fallback
         else:
             try:
-                return self._dbus.GetParameterValue(["driver", parameter])[2]
+                return self._if.GetParameterValue(["driver", parameter])[2]
             except:
                 return fallback
 
@@ -99,14 +155,14 @@ class JackCfgInterface:
         if not self.driver_has_feature(parameter):
             return False
         elif optional:
-            if value != self._dbus.GetParameterValue(["driver", parameter])[2]:
-                return bool(self._dbus.SetParameterValue(["driver", parameter],
-                                                         value))
+            if value != self._if.GetParameterValue(["driver", parameter])[2]:
+                return bool(self._if.SetParameterValue(["driver", parameter],
+                                                       value))
             else:
                 return False
         else:
-            return bool(self._dbus.SetParameterValue(["driver", parameter],
-                                                     value))
+            return bool(self._if.SetParameterValue(["driver", parameter],
+                                                   value))
 
     def activate_preset(self, settings):
         for component in ('engine', 'driver'):
@@ -121,7 +177,7 @@ class JackCfgInterface:
                 value = csettings.get(setting)
 
                 if value is None:
-                    self._dbus.ResetParameterValue([component, setting])
+                    self._if.ResetParameterValue([component, setting])
                     continue
 
                 if stype:
