@@ -6,13 +6,13 @@ import setuptools
 
 setuptools.setup(
     name="jack-select",
-    version="0.1",
+    version="0.1b1",
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
     description="A systray app to set the JACK configuration from QJackCtl "
                 "presets via DBus",
-    keywords="JACK,systray,GTK",
+    keywords="JACK,systray,GTK,DBus,audio",
     packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=[
