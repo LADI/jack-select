@@ -22,7 +22,9 @@ setup.
 Lastly, there are menu entries to stop the JACK server and to quit the
 application.
 
-To create or edit presets, just use QjackCtl and restart jack-select.
+To create or edit presets, just use the QJackCtl configuration dialog and make
+sure you close it with "Ok" so the changes are saved. jack-select will pick up
+the changes automatically.
 
 
 Requirements
