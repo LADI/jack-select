@@ -76,6 +76,9 @@ class JackCtlInterface(JackBaseInterface):
     def is_started(self, cb=None):
         return self.call_async('IsStarted', 'is_started', cb)
 
+    def is_realtime(self, cb=None):
+        return self.call_async('IsRealtime', 'is_realtime', cb)
+
     def start_server(self, cb=None):
         return self.call_async('StartServer', 'start_server', cb)
 

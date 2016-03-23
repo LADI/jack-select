@@ -30,7 +30,7 @@ class Indicator:
     Class Indicator can be easily reused in any other project.
 
     """
-    def __init__(self, icon):
+    def __init__(self, icon, title=None):
         """Create indicator icon and add menu.
 
         Args:
@@ -39,10 +39,12 @@ class Indicator:
         """
         self._icon_cache = {}
         self.icon = Gtk.StatusIcon.new_from_pixbuf(self._get_icon(icon))
-
         self.menu = Gtk.Menu()
         self.icon.connect('activate', self.on_popup_menu_open)
         self.icon.connect('popup-menu', self.on_popup_menu_open)
+
+        if title:
+            self.icon.set_title(title)
 
     def _get_icon(self, icon):
         """Return icon from package as GdkPixbuf.Pixbuf.
@@ -106,7 +108,7 @@ class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
     def __init__(self):
-        self.gui = Indicator('jack.png')
+        self.gui = Indicator('jack.png', "JACK-Select")
         self.gui.icon.set_has_tooltip(True)
         self.gui.icon.connect("query-tooltip", self.tooltip_query)
         self.jack_status = {}
@@ -116,6 +118,7 @@ class JackSelectApp:
         self.jackctl = JackCtlInterface(dbus_obj)
         self.jackcfg = JackCfgInterface(dbus_obj)
         self.presets = None
+        self.active_preset = None
         self.load_presets()
         GObject.timeout_add(1000, self.load_presets)
         GObject.timeout_add(500, self.check_jack_status)
@@ -184,10 +187,16 @@ class JackSelectApp:
 
         if self.jack_status.get('is_started'):
             try:
-                self.tooltext = (
-                    "%(samplerate)i Hz, %(period)i frames "
-                    "(%(latency)0.1f ms), %(load)i%% load, %(xruns)i xruns" %
-                    self.jack_status)
+                self.tooltext = ("%(samplerate)i Hz / %(period)i frames "
+                                 "(%(latency)0.1f ms)\n" % self.jack_status)
+                self.tooltext += "RT: %s " % (
+                    "yes" if self.jack_status.get('is_realtime') else "no")
+                self.tooltext += ("load: %(load)i%% xruns: %(xruns)i" %
+                                  self.jack_status)
+
+                if self.active_preset:
+                    self.tooltext = "<b>[%s]</b>\n%s" % (self.active_preset,
+                                                 self.tooltext)
             except KeyError:
                 self.tooltext = "No status available."
 
@@ -201,6 +210,7 @@ class JackSelectApp:
 
     def get_stats(self):
         if self.jack_status.get('is_started'):
+            self.jackctl.is_realtime(self.receive_status)
             self.jackctl.get_sample_rate(self.receive_status)
             self.jackctl.get_period(self.receive_status)
             self.jackctl.get_load(self.receive_status)
@@ -210,7 +220,7 @@ class JackSelectApp:
     def tooltip_query(self, widget, x, y, keyboard_mode, tooltip):
         """Set tooltip for the systray icon."""
         if self.jackctl:
-            tooltip.set_text(self.tooltext)
+            tooltip.set_markup(self.tooltext)
         else:
             tooltip.set_text("No JACK-DBus connection")
 
@@ -222,19 +232,21 @@ class JackSelectApp:
 
         if settings:
             self.jackcfg.activate_preset(settings)
-
-            s = []
-            for component, settings in settings.items():
-                s.append("[%s]" % component)
-                s.extend(["%s: %r" % (k, v)
-                         for k, v in sorted(settings.items())])
-                s.append('')
-
             log.info("Activated preset: %s", preset)
-            log.debug("Settings: %s", "\n".join(s))
+
+            if __debug__:
+                s = []
+                for component, settings in settings.items():
+                    s.append("[%s]" % component)
+                    s.extend(["%s: %r" % (k, v)
+                             for k, v in sorted(settings.items())])
+                    s.append('')
+
+                log.debug("Settings: %s", "\n".join(s))
 
             self.stop_jack_server()
             GObject.timeout_add(1000, self.start_jack_server)
+            self.active_preset = preset
 
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
