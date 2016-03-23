@@ -3,6 +3,9 @@
 A systray application to quickly change the [JACK] configuration from QjackCtl
 presets via DBus.
 
+Overview
+--------
+
 This application displays an icon in the system tray (also known as
 notification area) of your desktop, which shows the status of the JACK audio
 server and when you click on it, a menu pops up which lets you quickly select
@@ -41,7 +44,7 @@ This will install the `jack-select` program, the `jackselect` Python package
 and the `jack-select.desktop` file and the `jack-select.png` icon to provide a
 desktop start menu entry. It will also install the required Python dependencies
 if they haven't been installed yet. Installing `PyGObject` probably won't work
-this way, so make sure it is installed some other way beforhand, e.g. via
+this way, so make sure it is installed some other way beforehand, e.g. via
 your distributions package management.
 
 If you want to install jack-select only for the current user, replace the

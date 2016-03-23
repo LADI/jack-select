@@ -16,5 +16,11 @@ install-user:
 	$(INSTALL) -Dm644 jack-select.png $(HOME)/.local/share/icons/hicolor/48x48/apps
 	$(INSTALL) -Dm644 jack-select.desktop $(HOME)/.local/share/applications/
 
-pypi-upload:
+README.rst: README.md
+	pandoc -f markdown -t rst $< > $@
+
+sdist: README.rst
+	$(PYTHON) setup.py sdist --formats=bztar,zip
+
+pypi-upload: README.rst
 	$(PYTHON) setup.py sdist --formats=bztar,zip bdist_wheel upload
