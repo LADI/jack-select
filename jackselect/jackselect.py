@@ -125,25 +125,29 @@ class JackSelectApp:
 
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
-            if (not self.presets or
-                    mtime > getattr(self, '_qjackctl_conf_modified', 0)):
+            if not self.presets or mtime > getattr(self, '_conf_mtime', 0):
+                log.debug("Qjackctl configuration file mtime changed / "
+                          "previously unknown.")
+                log.debug("(Re-)Reading configuration.")
                 (
                     self.presets,
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf)
-                self._qjackctl_conf_modified = mtime
+                self._conf_mtime = mtime
                 self.create_menu()
-        else:
-            if self.presets or self.presets is None:
-                self.presets = []
-                self.settings = {}
-                self.default_preset = None
-                self.create_menu()
+        elif self.presets or self.presets is None:
+            self.log.warning("Qjackctl configuration file not found.")
+            if self.presets: self.debug("Removing stored presets.")
+            self.presets = []
+            self.settings = {}
+            self.default_preset = None
+            self.create_menu()
 
         return True  # keep function scheduled
 
     def create_menu(self):
+        log.debug("Building menu.")
         self.gui.menu = Gtk.Menu()
 
         if self.presets:
@@ -226,7 +230,7 @@ class JackSelectApp:
                          for k, v in sorted(settings.items())])
                 s.append('')
 
-            log.debug("Activated preset: %s", preset)
+            log.info("Activated preset: %s", preset)
             log.debug("Settings: %s", "\n".join(s))
 
             self.stop_jack_server()
