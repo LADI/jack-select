@@ -2,7 +2,7 @@ PREFIX ?= /usr/local
 PYTHON ?= python
 INSTALL ?= install
 
-.PHONY: install
+.PHONY: install install-user
 
 install:
 	$(PYTHON) setup.py install --prefix=$(PREFIX)
