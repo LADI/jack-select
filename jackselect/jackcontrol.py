@@ -106,7 +106,7 @@ class JackCfgInterface(JackBaseInterface):
 
     def engine_has_feature(self, feature):
         try:
-            features = self._if.ReadContainer(["driver"])[1]
+            features = self._if.ReadContainer(["engine"])[1]
         except:
             features = ()
         return dbus.String(feature) in features
