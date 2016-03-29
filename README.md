@@ -17,8 +17,8 @@ between different audio setups with just two mouse clicks.
 ![Screenshot of the pop menu](screenshot.png)
 
 When you hover with the mouse pointer over the systray icon and JACK is
-running, a tooltip will show you the most important parameters of the current
-setup.
+running, a tooltip will show you the name of the active preset (if known), the
+most important parameters of the current setup and some server statistics.
 
 ![Server status tooltip](tooltip.png)
 
@@ -55,7 +55,7 @@ last command above with:
 
 You can start jack-select from your desktop's XDG-compatible start menu or add
 it to your autostart folder (e.g. `~/.config/autostart`) to have it started
-along your desktop.
+along your with your desktop.
 
 
 Requirements
