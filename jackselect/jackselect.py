@@ -22,6 +22,9 @@ from .qjackctlconf import get_qjackctl_presets
 
 
 log = logging.getLogger('jack-select')
+INTERVAL_GET_STATS = 500
+INTERVAL_CHECK_CONF = 1000
+INTERVAL_RESTART = 1000
 
 
 class Indicator:
@@ -120,8 +123,8 @@ class JackSelectApp:
         self.presets = None
         self.active_preset = None
         self.load_presets()
-        GObject.timeout_add(1000, self.load_presets)
-        GObject.timeout_add(500, self.get_jack_stats)
+        GObject.timeout_add(INTERVAL_CHECK_CONF, self.load_presets)
+        GObject.timeout_add(INTERVAL_GET_STATS, self.get_jack_stats)
         self.jackctl.is_started(self.receive_jack_status)
         self.jackctl.add_signal_handler(self.handle_jackctl_signal)
 
@@ -250,7 +253,7 @@ class JackSelectApp:
                 log.debug("Settings: %s", "\n".join(s))
 
             self.stop_jack_server()
-            GObject.timeout_add(1000, self.start_jack_server)
+            GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
             self.active_preset = preset
 
     def start_jack_server(self, *args, **kwargs):
