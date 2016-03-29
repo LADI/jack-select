@@ -12,6 +12,8 @@ gi.require_version('Gtk', '3.0')  # noqa
 from gi.repository import Gtk, GObject
 from gi.repository.GdkPixbuf import Pixbuf
 
+import dbus
+import dbus.service
 
 from pkg_resources import resource_filename
 from xdg import BaseDirectory as xdgbase
@@ -22,6 +24,9 @@ from .qjackctlconf import get_qjackctl_presets
 
 
 log = logging.getLogger('jack-select')
+DBUS_NAME = 'de.chrisarndt.JackSelectService'
+DBUS_PATH = '/de/chrisarndt/JackSelectApp'
+DBUS_INTERFACE = 'de.chrisarndt.JackSelectInterface'
 INTERVAL_GET_STATS = 500
 INTERVAL_CHECK_CONF = 1000
 INTERVAL_RESTART = 1000
@@ -101,23 +106,58 @@ class Indicator:
         self.menu.append(m_item)
         self.menu.show_all()
 
-    def on_popup_menu_open(self, widget, button=None, *args):
+    def on_popup_menu_open(self, widget=None, button=None, *args):
         """Systray was clicked to open popup menu."""
-        self.menu.popup(None, None, Gtk.StatusIcon.position_menu, widget,
-                        button or 1, Gtk.get_current_event_time())
+        self.menu.popup(None, None, Gtk.StatusIcon.position_menu,
+                        widget or self.icon, button or 1,
+                        Gtk.get_current_event_time())
+
+
+class JackSelectService(dbus.service.Object):
+    def __init__(self, app, bus=None):
+        if bus is None:
+            bus = dbus.SessionBus()
+
+        # we need to keep a reference to the BusName
+        # otherwise it gets garbage-colleccted and the service vanishes
+        self.bus_name = dbus.service.BusName(DBUS_NAME, bus)
+        super().__init__(bus, DBUS_PATH)
+        self.app = app
+
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE, out_signature='i')
+    def GetPid(self):
+        log.debug("DBus client requested PID.")
+        return os.getpid()
+
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
+    def Exit(self):
+        log.debug("DBus client requested application exit.")
+        self.app.quit()
+
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
+    def OpenMenu(self):
+        log.debug("DBus client requested opening menu.")
+        self.app.gui.on_popup_menu_open()
+
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature='s')
+    def ActivatePreset(self, preset):
+        log.debug("DBus client requested activing preset '%s'." % preset)
+        self.app.activate_preset(preset=preset)
 
 
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self):
+    def __init__(self, bus=None):
+        if bus is None:
+            bus = dbus.SessionBus()
+
         self.gui = Indicator('jack.png', "JACK-Select")
         self.gui.icon.set_has_tooltip(True)
         self.gui.icon.connect("query-tooltip", self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
-        self.jackdbus = None
-        dbus_obj = get_jack_controller()
+        dbus_obj = get_jack_controller(bus)
         self.jackctl = JackCtlInterface(dbus_obj)
         self.jackcfg = JackCfgInterface(dbus_obj)
         self.presets = None
@@ -127,6 +167,7 @@ class JackSelectApp:
         GObject.timeout_add(INTERVAL_GET_STATS, self.get_jack_stats)
         self.jackctl.is_started(self.receive_jack_status)
         self.jackctl.add_signal_handler(self.handle_jackctl_signal)
+        self.dbus_service = JackSelectService(self, bus)
 
     def load_presets(self):
         qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
@@ -171,7 +212,7 @@ class JackSelectApp:
         self.menu_stop.set_sensitive(bool(self.jack_status.get('is_started')))
         self.gui.add_separator()
         self.menu_quit = self.gui.add_menu_item(
-            lambda x: Gtk.main_quit(), "Quit",
+            self.quit, "Quit",
             icon='quit.png')
         self.gui.menu.show_all()
 
@@ -234,11 +275,15 @@ class JackSelectApp:
 
         return True
 
-    def activate_preset(self, m_item, **kwargs):
-        preset = m_item.get_label()
+    def activate_preset(self, m_item=None, **kwargs):
+        if m_item:
+            preset = m_item.get_label()
+        else:
+            preset = kwargs.get('preset')
+
         settings = self.settings.get(preset)
 
-        if settings:
+        if preset and settings:
             self.jackcfg.activate_preset(settings)
             log.info("Activated preset: %s", preset)
 
@@ -255,6 +300,8 @@ class JackSelectApp:
             self.stop_jack_server()
             GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
             self.active_preset = preset
+        else:
+            log.warning("Unknown preset: %s", preset)
 
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
@@ -264,17 +311,50 @@ class JackSelectApp:
         if self.jackctl and self.jack_status.get('is_started'):
             self.jackctl.stop_server()
 
+    def quit(self, *args):
+        log.debug("Exiting main loop.")
+        Gtk.main_quit()
 
-def main():
+
+def get_dbus_client(bus=None):
+    if bus is None:
+        bus = dbus.SessionBus()
+
+    obj = bus.get_object(DBUS_NAME, DBUS_PATH)
+    return dbus.Interface(obj, DBUS_INTERFACE)
+
+
+def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
-    logging.basicConfig(
-        level=logging.DEBUG if '-v' in sys.argv[1:] else logging.INFO,
-        format="[%(name)s] %(levelname)s: %(message)s")
+
+    if '-v' in args:
+        loglevel = logging.DEBUG
+        args.remove('-v')
+    else:
+        loglevel = logging.INFO
+
+    logging.basicConfig(level=loglevel,
+                        format="[%(name)s] %(levelname)s: %(message)s")
+
+    # the mainloop needs to be set before creating the session bus instance
     DBusGMainLoop(set_as_default=True)
-    JackSelectApp()
-    return Gtk.main()
+    bus = dbus.SessionBus()
+
+    try:
+        client = get_dbus_client(bus)
+        log.debug("JACK-Select DBus service detected.")
+
+        if args:
+            log.debug("Activating preset '%s'.", args[0])
+            client.ActivatePreset(args[0])
+        else:
+            log.debug("Opening menu...")
+            client.OpenMenu()
+    except dbus.DBusException:
+        JackSelectApp(bus)
+        return Gtk.main()
 
 
 if __name__ == '__main__':
-    sys.exit(main() or 0)
+    sys.exit(main(sys.argv[1:]) or 0)
