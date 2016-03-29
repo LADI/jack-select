@@ -121,7 +121,9 @@ class JackSelectApp:
         self.active_preset = None
         self.load_presets()
         GObject.timeout_add(1000, self.load_presets)
-        GObject.timeout_add(500, self.check_jack_status)
+        GObject.timeout_add(500, self.get_jack_stats)
+        self.jackctl.is_started(self.receive_jack_status)
+        self.jackctl.add_signal_handler(self.handle_jackctl_signal)
 
     def load_presets(self):
         qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
@@ -170,7 +172,7 @@ class JackSelectApp:
             icon='quit.png')
         self.gui.menu.show_all()
 
-    def receive_status(self, value, name=None):
+    def receive_jack_status(self, value, name=None):
         if name == 'is_started':
             if value != self.jack_status.get('is_started'):
                 if value:
@@ -202,22 +204,23 @@ class JackSelectApp:
             except KeyError:
                 self.tooltext = "No status available."
 
-    def check_jack_status(self):
-        if self.jackctl:
-            self.jackctl.is_started(self.receive_status)
-            # Get stats later, after we received running status
-            GObject.timeout_add(250, self.get_stats)
+    def handle_jackctl_signal(self, *args, signal=None, **kw):
+        if signal == 'ServerStarted':
+            self.receive_jack_status(True, name='is_started')
+        elif signal == 'ServerStopped':
+            self.receive_jack_status(False, name='is_started')
+
+    def get_jack_stats(self):
+        if self.jackctl and self.jack_status.get('is_started'):
+            cb = self.receive_jack_status
+            self.jackctl.is_realtime(cb)
+            self.jackctl.get_sample_rate(cb)
+            self.jackctl.get_period(cb)
+            self.jackctl.get_load(cb)
+            self.jackctl.get_xruns(cb)
+            self.jackctl.get_latency(cb)
 
         return True  # keep function scheduled
-
-    def get_stats(self):
-        if self.jack_status.get('is_started'):
-            self.jackctl.is_realtime(self.receive_status)
-            self.jackctl.get_sample_rate(self.receive_status)
-            self.jackctl.get_period(self.receive_status)
-            self.jackctl.get_load(self.receive_status)
-            self.jackctl.get_xruns(self.receive_status)
-            self.jackctl.get_latency(self.receive_status)
 
     def tooltip_query(self, widget, x, y, keyboard_mode, tooltip):
         """Set tooltip for the systray icon."""
@@ -253,12 +256,10 @@ class JackSelectApp:
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
             self.jackctl.start_server()
-            self.check_jack_status()
 
     def stop_jack_server(self, *args, **kwargs):
         if self.jackctl and self.jack_status.get('is_started'):
             self.jackctl.stop_server()
-            self.check_jack_status()
 
 
 def main():
