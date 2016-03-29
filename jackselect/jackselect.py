@@ -328,7 +328,7 @@ def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
 
-    if '-v' in args:
+    if args and '-v' in args:
         loglevel = logging.DEBUG
         args.remove('-v')
     else:
