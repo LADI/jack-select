@@ -100,6 +100,13 @@ class JackCtlInterface(JackBaseInterface):
     def get_xruns(self, cb=None):
         return self.call_async('GetXruns', 'xruns', cb)
 
+    def add_signal_handler(self, handler, signal=None):
+        return self._if.connect_to_signal(
+            signal_name=signal,
+            handler_function=handler,
+            interface_keyword='interface',
+            member_keyword='signal')
+
 
 class JackCfgInterface(JackBaseInterface):
     interface = "org.jackaudio.Configure"
