@@ -187,16 +187,18 @@ class JackSelectApp:
 
         if self.jack_status.get('is_started'):
             try:
-                self.tooltext = ("%(samplerate)i Hz / %(period)i frames "
-                                 "(%(latency)0.1f ms)\n" % self.jack_status)
+                if self.active_preset:
+                    self.tooltext = "<b>[%s]</b>\n" % self.active_preset
+                else:
+                    self.tooltext = "<i><b>Unknown configuration</b></i>\n"
+
+                self.tooltext += ("%(samplerate)i Hz / %(period)i frames "
+                                  "(%(latency)0.1f ms)\n" % self.jack_status)
                 self.tooltext += "RT: %s " % (
                     "yes" if self.jack_status.get('is_realtime') else "no")
                 self.tooltext += ("load: %(load)i%% xruns: %(xruns)i" %
                                   self.jack_status)
 
-                if self.active_preset:
-                    self.tooltext = "<b>[%s]</b>\n%s" % (self.active_preset,
-                                                 self.tooltext)
             except KeyError:
                 self.tooltext = "No status available."
 
