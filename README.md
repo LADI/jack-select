@@ -30,6 +30,25 @@ sure you close it with "Ok" so the changes are saved. jack-select will pick up
 the changes automatically.
 
 
+DBus Interface
+--------------
+
+jack-select also has a DBus interface, which means you can use any generic DBus
+client to tell jack-select to open its menu, activate a preset by name or to
+terminate itself. You can also run the `jack-select` command while another
+instance is already running, to access some of the DBus service methods.
+
+When `jack-select` starts up, it first checks whether there is already an
+existing application providing the jack-select DBus service. If yes, when
+called with no command argument arguments, it tells the running jack-select
+instance to open its menu. If a preset name is given as the first command line
+argument, it tells the running jack-select instance to activate this preset.
+An invalid preset name is silently ignored.
+
+For details about the DBus interface, please use DBus introspection facilities
+to examine the `de.chrisarndt.JackSelectService` service on the session bus.
+
+
 Installation
 ------------
 
