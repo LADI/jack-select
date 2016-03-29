@@ -7,6 +7,7 @@ import logging
 
 log = logging.getLogger(__name__)
 PARAM_MAPPING = {
+    'driver': ('engine', 'driver'),
     'realtime': ('engine', 'realtime'),
     'priority': ('engine', 'realtime-priority'),
     'verbose': ('engine', 'verbose'),

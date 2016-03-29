@@ -11,6 +11,7 @@ import dbus
 log = logging.getLogger(__name__)
 SETTINGS = {
     'engine': (
+        'driver',
         'realtime',
         ('realtime-priority', dbus.Int32),
         'port-max',
@@ -18,7 +19,6 @@ SETTINGS = {
         ('client-timeout', dbus.Int32),
     ),
     'driver': (
-        'driver',
         'capture',
         'playback',
         'device',
