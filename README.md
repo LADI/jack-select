@@ -3,6 +3,23 @@
 A systray application to quickly change the [JACK] configuration from QjackCtl
 presets via DBus.
 
+
+Homepage
+--------
+
+jack-select is available from the source code repository on Github:
+
+https://github.com/SpotlightKid/jack-select
+
+There you can report issues and suggest new features or contribute via pull
+requests. Releases can be downloaded from the Python Package Index ([PyPI]).
+jack-select is also available as an Arch Linux package from the Arch User
+Repository ([AUR]).
+
+[PyPI]: https://pypi.python.org/pypi/jack-select
+[AUR]: https://aur.archlinux.org/packages/jack-select/
+
+
 Overview
 --------
 
@@ -53,24 +70,32 @@ Installation
 ------------
 
 To install jack-select on your system for everybody, check and install the
-requirements below and then run:
+requirements below and then get jack-select by either downloading a release
+archive from the Python Package Index ([PyPI]) and unpack it or clone the
+source code repository from Github:
 
     $ git clone https://github.com/SpotlightKid/jack-select
+
+Then change into the directory created by unpacking the release archive or
+cloning the repository and run `make install`:
+
     $ cd jack-select
     $ [sudo] make PREFIX=/usr install
 
-This will install the `jack-select` program, the `jackselect` Python package
-and the `jack-select.desktop` file and the `jack-select.png` icon to provide a
-desktop start menu entry. It will also install the required Python dependencies
-if they haven't been installed yet. Installing `PyGObject` probably won't work
-this way, so make sure it is installed some other way beforehand, e.g. via
-your distributions package management.
+This will install the `jack-select` program, the `jackselect` Python package,
+the `jack-select.1` man page and the `jack-select.desktop` file and the
+`jack-select.png` icon to provide a desktop start menu entry. It will also
+install the required Python dependencies if they haven't been installed yet.
+Installing `PyGObject` probably won't work this way, so make sure it is
+installed some other way beforehand, e.g. via your distributions package
+management.
 
 If you want to install jack-select only for the current user, replace the
 last command above with:
 
     $ make install-user
 
+This will not install the man page.
 
 You can start jack-select from your desktop's XDG-compatible start menu or add
 it to your autostart folder (e.g. `~/.config/autostart`) to have it started
@@ -80,10 +105,11 @@ along your with your desktop.
 Requirements
 ------------
 
-This application works with the DBus-version of JACK only.
+This application works with the DBus-version of JACK only. It written in Python
+3 using the [PyGObject] bindings for GTK 3. Python 2 is not supported.
 
-It written in Python 3 using the [PyGobject] bindings for GTK 3. In addition to
-this, the following third-party Python libraries are required:
+In addition to PyGObject, the following third-party Python libraries are
+required:
 
 * [pyxdg](http://freedesktop.org/Software/pyxdg)
 * [dbus-python](https://www.freedesktop.org/wiki/Software/DBusBindings/)
@@ -91,7 +117,11 @@ this, the following third-party Python libraries are required:
 These may be available from the package repository of your distribution as
 `python-gobject`, `python-xdg` and `python-dbus` respectively.
 
-Python 2 is not supported.
+If you want to install jack-select from a Git repository clone, you'll also
+need the Python [docutils](http://docutils.sourceforge.net) to build the man
+page from the ReST source. If you want to create the ReST version of the README
+from the Markdown source, you'll also need [pandoc](http://pandoc.org/) (only
+neccessary when you want to create a source distribution archive).
 
 
 [JACK]: http://jackaudio.org/
