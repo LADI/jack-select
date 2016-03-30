@@ -6,7 +6,7 @@ import setuptools
 
 setuptools.setup(
     name="jack-select",
-    version="0.5b1",
+    version="1.0",
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
@@ -26,7 +26,7 @@ setuptools.setup(
         ]
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX',
