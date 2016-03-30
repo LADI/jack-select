@@ -144,6 +144,11 @@ class JackSelectService(dbus.service.Object):
         log.debug("DBus client requested activing preset '%s'." % preset)
         self.app.activate_preset(preset=preset)
 
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
+    def StopJackServer(self):
+        log.debug("DBus client requested stopping JACK server.")
+        self.app.stop_jack_server()
+
 
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
