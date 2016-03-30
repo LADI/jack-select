@@ -70,7 +70,7 @@ FILES
     configuration presets jack-select uses.
 
     jack-select does not create or change this file. It parses the file on
-    startup and then checks it in regular interval. If the file is created,
+    startup and then checks it at a regular interval. If the file is created,
     changed or deleted, jack-select will update its menu accordingly.
 
 
