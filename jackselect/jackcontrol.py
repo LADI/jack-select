@@ -63,7 +63,8 @@ class JackBaseInterface:
 
     def call_async(self, meth, name, callback=None, *args):
         if callback:
-            handler = partial(self._async_handler, callback=callback, name=name)
+            handler = partial(self._async_handler, callback=callback,
+                              name=name)
             kw = dict(reply_handler=handler, error_handler=handler)
         else:
             kw = {}

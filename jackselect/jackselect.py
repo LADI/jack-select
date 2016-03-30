@@ -187,7 +187,10 @@ class JackSelectApp:
                 self.create_menu()
         elif self.presets or self.presets is None:
             self.log.warning("Qjackctl configuration file not found.")
-            if self.presets: self.debug("Removing stored presets.")
+
+            if __debug__ and self.presets:
+                self.debug("Removing stored presets.")
+
             self.presets = []
             self.settings = {}
             self.default_preset = None
@@ -328,7 +331,10 @@ def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
 
-    if args and '-v' in args:
+    if args is None:
+        args = sys.argv[1:]
+
+    if '-v' in args:
         loglevel = logging.DEBUG
         args.remove('-v')
     else:
@@ -357,4 +363,4 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]) or 0)
+    sys.exit(main() or 0)
