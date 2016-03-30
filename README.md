@@ -8,7 +8,7 @@ Overview
 
 This application displays an icon in the system tray (also known as
 notification area) of your desktop, which shows the status of the JACK audio
-server and when you click on it, a menu pops up which lets you quickly select
+server and when you click on it, a menu pops up, which lets you quickly select
 from the JACK configuration presets you created with [QjackCtl]. When you
 select a preset, its JACK engine and driver configuration settings are loaded
 via DBus into JACK and then the server is restarted. This allows you to switch
