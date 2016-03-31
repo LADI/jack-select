@@ -3,6 +3,13 @@
 A systray application to quickly change the [JACK] configuration from QjackCtl
 presets via DBus.
 
+![version](http://badge.kloud51.com/pypi/v/jack-select.svg)
+![status](http://badge.kloud51.com/pypi/s/jack-select.svg)
+![license](http://badge.kloud51.com/pypi/l/jack-select.svg)
+![python versions](http://badge.kloud51.com/pypi/py_versions/jack-select.svg)
+![formats](http://badge.kloud51.com/pypi/f/jack-select.svg)
+![wheel](http://badge.kloud51.com/pypi/w/jack-select.svg)
+![downloads](http://badge.kloud51.com/pypi/d/jack-select.svg)
 
 Homepage
 --------
