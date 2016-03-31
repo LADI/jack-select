@@ -119,7 +119,7 @@ class JackSelectService(dbus.service.Object):
             bus = dbus.SessionBus()
 
         # we need to keep a reference to the BusName
-        # otherwise it gets garbage-colleccted and the service vanishes
+        # otherwise it gets garbage-collected and the service vanishes
         self.bus_name = dbus.service.BusName(DBUS_NAME, bus)
         super().__init__(bus, DBUS_PATH)
         self.app = app
@@ -141,7 +141,7 @@ class JackSelectService(dbus.service.Object):
 
     @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature='s')
     def ActivatePreset(self, preset):
-        log.debug("DBus client requested activing preset '%s'." % preset)
+        log.debug("DBus client requested activating preset '%s'." % preset)
         self.app.activate_preset(preset=preset)
 
     @dbus.service.method(dbus_interface=DBUS_INTERFACE)
