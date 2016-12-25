@@ -2,6 +2,7 @@
 """A systray app to set the JACK configuration from QjackCtl presets via DBus.
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -143,6 +144,11 @@ class JackSelectService(dbus.service.Object):
     def ActivatePreset(self, preset):
         log.debug("DBus client requested activating preset '%s'." % preset)
         self.app.activate_preset(preset=preset)
+
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
+    def ActivateDefaultPreset(self):
+        log.debug("DBus client requested activating default preset.")
+        self.app.activate_preset()
 
     @dbus.service.method(dbus_interface=DBUS_INTERFACE)
     def StopJackServer(self):
@@ -287,7 +293,7 @@ class JackSelectApp:
         if m_item:
             preset = m_item.get_label()
         else:
-            preset = kwargs.get('preset')
+            preset = kwargs.get('preset', self.default_preset)
 
         settings = self.settings.get(preset)
 
@@ -336,16 +342,18 @@ def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
 
-    if args is None:
-        args = sys.argv[1:]
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument('-d', '--default', action="store_true",
+                    help="Activate default preset.")
+    ap.add_argument('-v', '--verbose', action="store_true",
+                    help="Be verbose about what the script does.")
+    ap.add_argument('preset', nargs='?',
+                    help="JACK configuration preset to activate on startup.")
 
-    if '-v' in args:
-        loglevel = logging.DEBUG
-        args.remove('-v')
-    else:
-        loglevel = logging.INFO
 
-    logging.basicConfig(level=loglevel,
+    args = ap.parse_args(args if args is not None else sys.argv[1:])
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="[%(name)s] %(levelname)s: %(message)s")
 
     # the mainloop needs to be set before creating the session bus instance
@@ -356,9 +364,12 @@ def main(args=None):
         client = get_dbus_client(bus)
         log.debug("JACK-Select DBus service detected.")
 
-        if args:
-            log.debug("Activating preset '%s'.", args[0])
-            client.ActivatePreset(args[0])
+        if args.default:
+            log.debug("Activating default preset.")
+            client.ActivateDefaultPreset()
+        elif args.preset:
+            log.debug("Activating preset '%s'.", args.preset)
+            client.ActivatePreset(args.preset)
         else:
             log.debug("Opening menu...")
             client.OpenMenu()
