@@ -186,7 +186,7 @@ class JackSelectApp:
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
             if not self.presets or mtime > getattr(self, '_conf_mtime', 0):
-                log.debug("Qjackctl configuration file mtime changed / "
+                log.debug("QjackCtl configuration file mtime changed / "
                           "previously unknown.")
                 log.debug("(Re-)Reading configuration.")
                 (
@@ -197,7 +197,7 @@ class JackSelectApp:
                 self._conf_mtime = mtime
                 self.create_menu()
         elif self.presets or self.presets is None:
-            self.log.warning("Qjackctl configuration file not found.")
+            self.log.warning("QjackCtl configuration file not found.")
 
             if __debug__ and self.presets:
                 self.debug("Removing stored presets.")
@@ -315,7 +315,7 @@ class JackSelectApp:
             GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
             self.active_preset = preset
         else:
-            log.warning("Unknown preset: %s", preset)
+            log.error("Unknown preset '%s'. Ignoring it.", preset)
 
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
@@ -349,7 +349,6 @@ def main(args=None):
                     help="Be verbose about what the script does.")
     ap.add_argument('preset', nargs='?',
                     help="JACK configuration preset to activate on startup.")
-
 
     args = ap.parse_args(args if args is not None else sys.argv[1:])
 
