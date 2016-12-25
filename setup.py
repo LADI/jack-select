@@ -6,7 +6,7 @@ import setuptools
 
 setuptools.setup(
     name="jack-select",
-    version="1.0",
+    version="1.1.0",
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
