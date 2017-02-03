@@ -1,7 +1,7 @@
 PACKAGE = jackselect
 PROJECT = jack-select
 PREFIX ?= /usr/local
-PYTHON ?= python
+PYTHON ?= python3
 INSTALL ?= install
 
 GENERATED_FILES = README.rst $(PROJECT).1
