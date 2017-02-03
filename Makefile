@@ -6,7 +6,11 @@ INSTALL ?= install
 
 GENERATED_FILES = README.rst $(PROJECT).1
 
-.PHONY: install install-user
+.PHONY: all install install-user
+
+all:
+	@echo 'make install: install jack-select to $(PREFIX)'
+	@echo 'make install-user: install jack-select as current user'
 
 README.rst: README.md
 	pandoc -f markdown -t rst $< > $@
@@ -15,9 +19,9 @@ $(PROJECT).1: $(PROJECT).1.rst
 	rst2man $< > $@
 
 flake8:
-	flake8 $(PACKAGE) pyalsacap
+	flake8 $(PACKAGE)
 
-install: $(GENERATED_FILES)
+install: $(PROJECT).1
 	$(PYTHON) setup.py install --prefix=$(PREFIX)
 	$(INSTALL) -Dm644 $(PROJECT).png $(PREFIX)/share/icons/hicolor/48x48/apps
 	$(INSTALL) -Dm644 $(PROJECT).desktop $(PREFIX)/share/applications/
