@@ -1,3 +1,4 @@
+DESTDIR ?= /
 PACKAGE = jackselect
 PROJECT = jack-select
 PREFIX ?= /usr/local
@@ -22,12 +23,12 @@ flake8:
 	flake8 $(PACKAGE)
 
 install: $(PROJECT).1
-	$(PYTHON) setup.py install --prefix=$(PREFIX)
-	$(INSTALL) -Dm644 $(PROJECT).png $(PREFIX)/share/icons/hicolor/48x48/apps
-	$(INSTALL) -Dm644 $(PROJECT).desktop $(PREFIX)/share/applications/
-	$(INSTALL) -Dm644 $(PROJECT).1 $(PREFIX)/share/man/man1/$(PROJECT).1
+	$(PYTHON) setup.py install --root=$(DESTDIR) --prefix=$(PREFIX) --optimize=1
+	$(INSTALL) -Dm644 $(PROJECT).png $(DESTDIR:/=)$(PREFIX)/share/icons/hicolor/48x48/apps
+	$(INSTALL) -Dm644 $(PROJECT).desktop $(DESTDIR:/=)$(PREFIX)/share/applications
+	$(INSTALL) -Dm644 $(PROJECT).1 $(DESTDIR:/=)$(PREFIX)/share/man/man1/$(PROJECT).1
 	update-desktop-database -q
-	gtk-update-icon-cache $(PREFIX)/share/icons/hicolor
+	gtk-update-icon-cache $(DESTDIR:/=)$(PREFIX)/share/icons/hicolor
 
 install-user:
 	$(PYTHON) setup.py install --user
