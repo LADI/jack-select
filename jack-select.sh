@@ -1,3 +1,3 @@
 #!/bin/bash
 
-PYTHONPATH="$(pwd)" python -m jackselect "$@"
+PYTHONPATH="$(pwd)" exec python3 -m jackselect "$@"
