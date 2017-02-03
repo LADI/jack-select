@@ -18,6 +18,7 @@ setuptools.setup(
     install_requires=[
         'PyGObject',
         'dbus-python',
+        'pyudev',
         'pyxdg'
     ],
     entry_points = {

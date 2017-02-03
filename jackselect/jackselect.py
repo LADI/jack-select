@@ -16,11 +16,15 @@ from gi.repository.GdkPixbuf import Pixbuf
 import dbus
 import dbus.service
 
+from pyudev import Context, Monitor
+
 from pkg_resources import resource_filename
 from xdg import BaseDirectory as xdgbase
 
+from .alsainfo import AlsaInfo
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
+from .pyudev_gobject import GUDevMonitorObserver
 from .qjackctlconf import get_qjackctl_presets
 
 
@@ -171,13 +175,30 @@ class JackSelectApp:
         dbus_obj = get_jack_controller(bus)
         self.jackctl = JackCtlInterface(dbus_obj)
         self.jackcfg = JackCfgInterface(dbus_obj)
+
+        # get ALSA devices and their parameters
+        self.handle_device_change(None, 'init')
+
+        # load QjackCtl presets
         self.presets = None
         self.active_preset = None
         self.load_presets()
+
+        # set up udev device monitor
+        context = Context()
+        self.udev_monitor = Monitor.from_netlink(context)
+        self.udev_monitor.filter_by(subsystem='sound')
+        self.udev_observer = GUDevMonitorObserver(self.udev_monitor)
+        self.udev_observer.connect('device-event', self.handle_device_change)
+        self.udev_monitor.start()
+
+        # set up periodic functions to check presets & jack status
         GObject.timeout_add(INTERVAL_CHECK_CONF, self.load_presets)
         GObject.timeout_add(INTERVAL_GET_STATS, self.get_jack_stats)
         self.jackctl.is_started(self.receive_jack_status)
         self.jackctl.add_signal_handler(self.handle_jackctl_signal)
+
+        # add & start DBUS service
         self.dbus_service = JackSelectService(self, bus)
 
     def load_presets(self):
@@ -209,13 +230,36 @@ class JackSelectApp:
 
         return True  # keep function scheduled
 
+    def check_alsa_settings(self, preset):
+        engine = self.settings[preset]['engine']
+        driver = self.settings[preset]['driver']
+        if engine['driver'] != 'alsa':
+            return True
+
+        dev = driver.get('device')
+        if dev and dev not in self.alsainfo.devices:
+            return False
+
+        dev = driver.get('playback')
+        if dev and dev not in self.alsainfo.playback_devices:
+            return False
+
+        dev = driver.get('capture')
+        if dev and dev not in self.alsainfo.capture_devices:
+            return False
+
+        return True
+
     def create_menu(self):
         log.debug("Building menu.")
         self.gui.menu = Gtk.Menu()
 
         if self.presets:
             for preset in sorted(self.presets):
-                self.gui.add_menu_item(self.activate_preset, preset)
+                item = self.gui.add_menu_item(self.activate_preset, preset)
+
+                if not self.check_alsa_settings(preset):
+                    item.set_sensitive(False)
         else:
             item = self.gui.add_menu_item(None, "No presets found")
             item.set_sensitive(False)
@@ -261,6 +305,15 @@ class JackSelectApp:
 
             except KeyError:
                 self.tooltext = "No status available."
+
+    def handle_device_change(self, observer, action, device=None):
+        if device:
+            dev = device.device_path.split('/')[-1]
+        if action == 'init' or (
+                action in ('change', 'remove') and dev.startswith('card')):
+            log.debug("ALSA device change signal received. "
+                      "Collecting ALSA device info....")
+            self.alsainfo = AlsaInfo()
 
     def handle_jackctl_signal(self, *args, signal=None, **kw):
         if signal == 'ServerStarted':
