@@ -23,7 +23,7 @@ requests. Releases can be downloaded from the Python Package Index ([PyPI]).
 jack-select is also available as an Arch Linux package from the Arch User
 Repository ([AUR]).
 
-[PyPI]: https://pypi.python.org/pypi/jack-select
+[PyPI]: https://pypi.org/project/jack-select
 [AUR]: https://aur.archlinux.org/packages/jack-select/
 
 
@@ -39,6 +39,11 @@ via DBus into JACK and then the server is restarted. This allows you to switch
 between different audio setups with just two mouse clicks.
 
 ![Screenshot of the pop menu](screenshot.png)
+
+Menu entries for presets, which refer to ALSA devices currently not available
+(e.g. those provided by USB interfaces, which are currently un-plugged), will
+be deactivated. The application will detect changes in the sound device
+configuration via udev and update the menu accordingly.
 
 When you hover with the mouse pointer over the systray icon and JACK is
 running, a tooltip will show you the name of the active preset (if known), the
@@ -120,9 +125,10 @@ required:
 
 * [pyxdg](http://freedesktop.org/Software/pyxdg)
 * [dbus-python](https://www.freedesktop.org/wiki/Software/DBusBindings/)
+* [pyudev](http://pyudev.readthedocs.org/)
 
 These may be available from the package repository of your distribution as
-`python-gobject`, `python-xdg` and `python-dbus` respectively.
+`python-gobject`, `python-xdg`, `python-dbus` and `python-pyudev` respectively.
 
 If you want to install jack-select from a Git repository clone, you'll also
 need the Python [docutils](http://docutils.sourceforge.net) to build the man
