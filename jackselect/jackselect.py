@@ -24,7 +24,7 @@ from xdg import BaseDirectory as xdgbase
 from .alsainfo import AlsaInfo
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
-from .pyudev_gobject import GUDevMonitorObserver
+from .pyudev_gobject import MonitorObserver
 from .qjackctlconf import get_qjackctl_presets
 
 
@@ -181,7 +181,7 @@ class JackSelectApp:
         self.jackcfg = JackCfgInterface(dbus_obj)
 
         # get ALSA devices and their parameters
-        self.handle_device_change(None, 'init')
+        self.handle_device_change(None, init=True)
 
         # load QjackCtl presets
         self.presets = None
@@ -201,7 +201,7 @@ class JackSelectApp:
         context = Context()
         self.udev_monitor = Monitor.from_netlink(context)
         self.udev_monitor.filter_by(subsystem='sound')
-        self.udev_observer = GUDevMonitorObserver(self.udev_monitor)
+        self.udev_observer = MonitorObserver(self.udev_monitor)
         self.udev_observer.connect('device-event', self.handle_device_change)
         self.udev_monitor.start()
 
@@ -313,15 +313,15 @@ class JackSelectApp:
             except KeyError:
                 self.tooltext = "No status available."
 
-    def handle_device_change(self, observer, action, device=None):
+    def handle_device_change(self, observer, device=None, init=False):
         if device:
             dev = device.device_path.split('/')[-1]
-        if action == 'init' or (
-                action in ('change', 'remove') and dev.startswith('card')):
-            log.debug("ALSA device change signal received. "
-                      "Collecting ALSA device info....")
+
+        if init or (device.action in ('change', 'remove') and dev.startswith('card')):
+            log.debug("ALSA card change signal received. Collecting device info...")
             self.alsainfo = AlsaInfo()
-            if action != 'init':
+
+            if device and device.action != 'init':
                 self.load_presets(force=True)
 
     def handle_jackctl_signal(self, *args, signal=None, **kw):
