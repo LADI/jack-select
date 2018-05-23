@@ -374,7 +374,10 @@ def main(args=None):
             client.OpenMenu()
     except dbus.DBusException:
         JackSelectApp(bus)
-        return Gtk.main()
+        try:
+            return Gtk.main()
+        except KeyboardInterrupt:
+            return "Interrupted."
 
 
 if __name__ == '__main__':
