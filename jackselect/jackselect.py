@@ -112,10 +112,14 @@ class Indicator:
         self.menu.show_all()
 
     def on_popup_menu_open(self, widget=None, button=None, *args):
-        """Systray was clicked to open popup menu."""
+        """Some action requested opening the popup menu."""
         self.menu.popup(None, None, Gtk.StatusIcon.position_menu,
                         widget or self.icon, button or 1,
                         Gtk.get_current_event_time())
+
+    def on_popup_menu_close(self, widget=None, button=None, *args):
+        """Some action requested closing the popup menu."""
+        self.menu.popdown()
 
 
 class JackSelectService(dbus.service.Object):
@@ -184,14 +188,6 @@ class JackSelectApp:
         self.active_preset = None
         self.load_presets()
 
-        # set up udev device monitor
-        context = Context()
-        self.udev_monitor = Monitor.from_netlink(context)
-        self.udev_monitor.filter_by(subsystem='sound')
-        self.udev_observer = GUDevMonitorObserver(self.udev_monitor)
-        self.udev_observer.connect('device-event', self.handle_device_change)
-        self.udev_monitor.start()
-
         # set up periodic functions to check presets & jack status
         GObject.timeout_add(INTERVAL_CHECK_CONF, self.load_presets)
         GObject.timeout_add(INTERVAL_GET_STATS, self.get_jack_stats)
@@ -201,14 +197,25 @@ class JackSelectApp:
         # add & start DBUS service
         self.dbus_service = JackSelectService(self, bus)
 
-    def load_presets(self):
+        # set up udev device monitor
+        context = Context()
+        self.udev_monitor = Monitor.from_netlink(context)
+        self.udev_monitor.filter_by(subsystem='sound')
+        self.udev_observer = GUDevMonitorObserver(self.udev_monitor)
+        self.udev_observer.connect('device-event', self.handle_device_change)
+        self.udev_monitor.start()
+
+    def load_presets(self, force=False):
         qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
 
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
-            if not self.presets or mtime > getattr(self, '_conf_mtime', 0):
-                log.debug("QjackCtl configuration file mtime changed / "
-                          "previously unknown.")
+            changed = mtime > getattr(self, '_conf_mtime', 0)
+
+            if changed:
+                log.debug("QjackCtl configuration file mtime changed or previously unknown.")
+
+            if force or changed or not self.presets:
                 log.debug("(Re-)Reading configuration.")
                 (
                     self.presets,
@@ -314,6 +321,8 @@ class JackSelectApp:
             log.debug("ALSA device change signal received. "
                       "Collecting ALSA device info....")
             self.alsainfo = AlsaInfo()
+            if action != 'init':
+                self.load_presets(force=True)
 
     def handle_jackctl_signal(self, *args, signal=None, **kw):
         if signal == 'ServerStarted':

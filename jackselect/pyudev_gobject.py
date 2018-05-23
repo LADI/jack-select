@@ -106,6 +106,7 @@ class GUDevMonitorObserver(GObject.GObject):
                 self.monitor, GObject.IO_IN, self._process_udev_event)
         elif not value and self.event_source is not None:
             GObject.source_remove(self.event_source)
+            self.event_source = None
 
     def _process_udev_event(self, source, condition):
         if condition == GObject.IO_IN:

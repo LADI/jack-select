@@ -272,8 +272,6 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
         log.debug('Discovered card #%(cardno)i "%(id)s" ("%(name)s").', card)
         card["devices"] = devices = {}
 
-# ~        import pdb; pdb.set_trace()
-
         # device enumeration
         while True:
             _lib.snd_ctl_pcm_next_device(c_handle_p, byref(c_dev))
@@ -290,7 +288,7 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
             err = _lib.snd_ctl_pcm_info(c_handle_p, c_pcminfo_p)
             if err < 0:
                 errmsg = _lib.snd_strerror(err).decode('utf-8')
-                log.debug("Could not get info for PCM %s device #%i: %s",
+                log.debug("Could not get info for PCM %s device #%i. %s",
                           s_stream, c_dev.value, errmsg)
                 continue
 
@@ -317,7 +315,11 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 check_call(_lib.snd_pcm_open, (byref(c_pcm_p), b_hwdev, c_int(stream),
                            SND_PCM_NONBLOCK), "Could not open PCM {stream} device '{dev}'.",
                            stream=s_stream, dev=hwdev)
+            except LibAsoundError as exc:
+                log.warning(str(exc))
+                continue
 
+            try:
                 # Get hardware parameter space
                 check_call(_lib.snd_pcm_hw_params_malloc, (byref(c_params_p),),
                            "Could not allocate memory for snd_pcm_hw_params_t.")
