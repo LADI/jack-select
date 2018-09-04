@@ -197,10 +197,10 @@ class JackSelectApp:
                 self._conf_mtime = mtime
                 self.create_menu()
         elif self.presets or self.presets is None:
-            self.log.warning("QjackCtl configuration file not found.")
+            log.warning("QjackCtl configuration file not found.")
 
             if __debug__ and self.presets:
-                self.debug("Removing stored presets.")
+                log.debug("Removing stored presets.")
 
             self.presets = []
             self.settings = {}
