@@ -122,7 +122,7 @@ get the following error when running jack-select:
 
 This means that `dbus-python` was not installed in a setuptools-compatible way.
 Unfortunately this seems to be the case on most major Linux distributions.
-As a workaround, you can install a working versin `dbus-python` from PyPI
+As a workaround, you can install a working version of `dbus-python` from PyPI
 only for your current user:
 
     pip install --user dbus-python
