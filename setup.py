@@ -6,7 +6,7 @@ import setuptools
 
 setuptools.setup(
     name="jack-select",
-    version="1.1.0",
+    version="1.1.1",
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
@@ -34,6 +34,8 @@ setuptools.setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Environment :: X11 Applications :: GTK',
         'Topic :: Multimedia :: Sound/Audio'
     ],
