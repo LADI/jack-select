@@ -115,7 +115,7 @@ class JackCfgInterface(JackBaseInterface):
     def engine_has_feature(self, feature):
         try:
             features = self._if.ReadContainer(["engine"])[1]
-        except:
+        except:  # noqa:E722
             features = ()
         return dbus.String(feature) in features
 
@@ -125,7 +125,7 @@ class JackCfgInterface(JackBaseInterface):
         else:
             try:
                 return self._if.GetParameterValue(["engine", parameter])[2]
-            except:
+            except:  # noqa:E722
                 return fallback
 
     def set_engine_parameter(self, parameter, value, optional=True):
@@ -149,7 +149,7 @@ class JackCfgInterface(JackBaseInterface):
     def driver_has_feature(self, feature):
         try:
             features = self._if.ReadContainer(["driver"])[1]
-        except:
+        except:  # noqa:E722
             features = ()
         return dbus.String(feature) in features
 
@@ -159,7 +159,7 @@ class JackCfgInterface(JackBaseInterface):
         else:
             try:
                 return self._if.GetParameterValue(["driver", parameter])[2]
-            except:
+            except:  # noqa:E722
                 return fallback
 
     def set_driver_parameter(self, parameter, value, optional=True):
