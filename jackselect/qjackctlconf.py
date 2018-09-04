@@ -39,7 +39,7 @@ def get_qjackctl_presets(qjackctl_conf):
 
     try:
         default_preset = config.get('Presets', 'DefPreset')
-    except:
+    except configparser.Error:
         default_preset = presets[0] if presets else '(default)'
 
     settings = {}
