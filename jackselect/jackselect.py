@@ -185,8 +185,8 @@ class JackSelectApp:
 
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
-            if not self.presets or mtime > getattr(self, '_conf_mtime', 0):
-                log.debug("QjackCtl configuration file mtime changed / "
+            if mtime > getattr(self, '_conf_mtime', 0):
+                log.debug("QjackCtl configuration file mtime changed or "
                           "previously unknown.")
                 log.debug("(Re-)Reading configuration.")
                 (
@@ -194,8 +194,8 @@ class JackSelectApp:
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf)
-                self._conf_mtime = mtime
                 self.create_menu()
+            self._conf_mtime = mtime
         elif self.presets or self.presets is None:
             log.warning("QjackCtl configuration file not found.")
 
