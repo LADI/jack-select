@@ -93,9 +93,6 @@ This will install the `jack-select` program, the `jackselect` Python package,
 the `jack-select.1` man page and the `jack-select.desktop` file and the
 `jack-select.png` icon to provide a desktop start menu entry. It will also
 install the required Python dependencies if they haven't been installed yet.
-Installing `PyGObject` probably won't work this way, so make sure it is
-installed some other way beforehand, e.g. via your distributions package
-management.
 
 If you want to install jack-select only for the current user, replace the
 last command above with:
@@ -107,6 +104,28 @@ This will not install the man page.
 You can start jack-select from your desktop's XDG-compatible start menu or add
 it to your autostart folder (e.g. `~/.config/autostart`) to have it started
 along your with your desktop.
+
+**Note:**
+If you do not have installed `PyGObject` and/or `dbus-python` via your
+distribution's package system yet, running the install command given above will
+try to install them via Python setuptools from the Python Package Index (PyPI).
+This will most likely require a compiler and some development packages to be
+installed, since not all indirect dependencies are available on PyPI as binary
+wheels for Linux. If this fails, try installing the packages `build-essential`,
+`python-dev` and `libcairo2-dev` (assuming your Linux distribution is a
+debian/Ubuntu variant) and try again.
+
+If `dbus-python` is installed via your distribution's package system, you may
+get the following error when running jack-select:
+
+    pkg_resources.DistributionNotFound: The 'dbus-python' distribution was not found and is required by jack-select
+
+This means that `dbus-python` was not installed in a setuptools-compatible way.
+Unfortunately this seems to be the case on most major Linux distributions.
+As a workaround, you can install a working versin `dbus-python` from PyPI
+only for your current user:
+
+    pip install --user dbus-python
 
 
 Requirements
