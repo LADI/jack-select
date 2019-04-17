@@ -25,6 +25,7 @@ PARAM_MAPPING = {
     'mididriver': 'midi',
     # 'snoop': '???'
 }
+DEFAULT_PRESET = object()
 
 
 def get_qjackctl_presets(qjackctl_conf):
@@ -32,44 +33,45 @@ def get_qjackctl_presets(qjackctl_conf):
     config.optionxform = lambda option: option
     config.read(qjackctl_conf)
 
-    presets = []
     if 'Presets' in config:
-        presets = [v for k, v in sorted(config['Presets'].items())
-                   if k != 'DefPreset']
+        preset_names = {v for k, v in config['Presets'].items()
+                        if k != 'DefPreset'}
+    else:
+        preset_names = set()
 
     try:
         default_preset = config.get('Presets', 'DefPreset')
     except configparser.Error:
-        default_preset = presets[0] if presets else '(default)'
+        default_preset = preset_names[0] if preset_names else DEFAULT_PRESET
 
     settings = {}
     if 'Settings' in config:
-        if not presets:
-            presets = [default_preset]
-
         for name in config['Settings']:
             try:
-                preset, setting = name.split('\\', 1)
+                preset_name, setting = name.split('\\', 1)
             except ValueError:
-                # only the default preset was saved
+                # The default (nameless) preset was saved.
+                # It uses settings keys without a preset name prefix.
                 setting = name
-                preset = default_preset
+                preset_name = DEFAULT_PRESET
+                preset_names.add(DEFAULT_PRESET)
 
             setting = setting.lower()
             value = config.get('Settings', name)
 
-            if preset in presets:
+            if preset_name in preset_names:
                 setting = PARAM_MAPPING.get(setting, setting)
+
                 if isinstance(setting, tuple):
                     component, setting = setting
                 else:
                     component = 'driver'
 
-                if preset not in settings:
-                    settings[preset] = {}
+                if preset_name not in settings:
+                    settings[preset_name] = {}
 
-                if component not in settings[preset]:
-                    settings[preset][component] = {}
+                if component not in settings[preset_name]:
+                    settings[preset_name][component] = {}
 
                 if value == 'false':
                     value = False
@@ -83,11 +85,11 @@ def get_qjackctl_presets(qjackctl_conf):
                     except (TypeError, ValueError):
                         pass
 
-                settings[preset][component][setting] = value
+                settings[preset_name][component][setting] = value
             else:
-                log.warning("Unknown preset: %s" % preset)
+                log.warning("Unknown preset: %s" % preset_name)
 
-    return presets, settings, default_preset
+    return list(preset_names), settings, default_preset
 
 
 def _test():

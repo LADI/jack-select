@@ -23,7 +23,7 @@ from .alsainfo import AlsaInfo
 from .devmonitor import AlsaDevMonitor
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
-from .qjackctlconf import get_qjackctl_presets
+from .qjackctlconf import DEFAULT_PRESET, get_qjackctl_presets
 
 
 log = logging.getLogger('jack-select')
@@ -218,12 +218,20 @@ class JackSelectApp:
             if force or changed or not self.presets:
                 log.debug("(Re-)Reading configuration.")
                 (
-                    presets,
+                    preset_names,
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf)
-                self.presets = {name.replace('_', ' '): name
-                                for name in presets}
+                self.presets = {}
+
+                for name in preset_names:
+                    if name is DEFAULT_PRESET:
+                        label = '(default)'
+                    else:
+                        label = name.replace('_', ' ')
+
+                    self.presets[label] = name
+
                 self.create_menu()
 
             self._conf_mtime = mtime
@@ -240,7 +248,7 @@ class JackSelectApp:
 
         return True  # keep function scheduled
 
-    def check_alsa_settings(self, preset):
+    def check_alsa_settings(self, preset, label):
         engine = self.settings[preset]['engine']
         driver = self.settings[preset]['driver']
         if engine['driver'] != 'alsa':
@@ -249,19 +257,19 @@ class JackSelectApp:
         dev = driver.get('device')
         if dev and dev not in self.alsainfo.devices:
             log.debug("Device '%s' used by preset '%s' not found.",
-                      dev, preset)
+                      dev, label)
             return False
 
         dev = driver.get('playback')
         if dev and dev not in self.alsainfo.playback_devices:
             log.debug("Playback device '%s' used by preset '%s' not found.",
-                      dev, preset)
+                      dev, label)
             return False
 
         dev = driver.get('capture')
         if dev and dev not in self.alsainfo.capture_devices:
             log.debug("Capture device '%s' used by preset '%s' not found.",
-                      dev, preset)
+                      dev, label)
             return False
 
         return True
@@ -277,7 +285,7 @@ class JackSelectApp:
             for label, name in sorted(self.presets.items()):
                 item = self.gui.add_menu_item(self.activate_preset, label)
 
-                if self.alsainfo and not self.check_alsa_settings(name):
+                if self.alsainfo and not self.check_alsa_settings(name, label):
                     item.set_sensitive(False)
         else:
             item = self.gui.add_menu_item(None, "No presets found")
@@ -288,9 +296,8 @@ class JackSelectApp:
             self.stop_jack_server, "Stop JACK Server", icon='stop.png')
         self.menu_stop.set_sensitive(bool(self.jack_status.get('is_started')))
         self.gui.add_separator()
-        self.menu_quit = self.gui.add_menu_item(
-            self.quit, "Quit",
-            icon='quit.png')
+        self.menu_quit = self.gui.add_menu_item(self.quit, "Quit",
+                                                icon='quit.png')
         self.gui.menu.show_all()
 
     def receive_jack_status(self, value, name=None):
@@ -311,7 +318,7 @@ class JackSelectApp:
         if self.jack_status.get('is_started'):
             try:
                 if self.active_preset:
-                    self.tooltext = "<b>[%s]</b>\n" % self.active_preset
+                    self.tooltext = "<b>%s</b>\n" % self.active_preset[1]
                 else:
                     self.tooltext = "<i><b>Unknown configuration</b></i>\n"
 
@@ -321,7 +328,6 @@ class JackSelectApp:
                     "yes" if self.jack_status.get('is_realtime') else "no")
                 self.tooltext += ("load: %(load)i%% xruns: %(xruns)i" %
                                   self.jack_status)
-
             except KeyError:
                 self.tooltext = "No status available."
 
@@ -371,15 +377,16 @@ class JackSelectApp:
 
     def activate_preset(self, m_item=None, **kwargs):
         if m_item:
-            preset = self.presets.get(m_item.get_label())
+            label = m_item.get_label()
+            preset = self.presets.get(label)
         else:
-            preset = kwargs.get('preset', self.default_preset)
+            preset = label = kwargs.get('preset', self.default_preset)
 
         settings = self.settings.get(preset)
 
         if preset and settings:
             self.jackcfg.activate_preset(settings)
-            log.info("Activated preset: %s", preset)
+            log.info("Activated preset: %s", label)
 
             if __debug__:
                 s = []
@@ -393,9 +400,9 @@ class JackSelectApp:
 
             self.stop_jack_server()
             GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
-            self.active_preset = preset
+            self.active_preset = (preset, label)
         else:
-            log.error("Unknown preset '%s'. Ignoring it.", preset)
+            log.error("Unknown preset '%s'. Ignoring it.", label)
 
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
@@ -407,7 +414,9 @@ class JackSelectApp:
 
     def stop_jack_server(self, *args, **kwargs):
         if self.jackctl and self.jack_status.get('is_started'):
+            self.active_preset = None
             log.debug("Stopping JACK server...")
+
             try:
                 self.jackctl.stop_server()
             except Exception as exc:
