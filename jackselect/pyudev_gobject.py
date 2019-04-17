@@ -22,7 +22,7 @@ pyudev_gobject
 Glib integration.
 
 :class:`MonitorObserver` integrates device monitoring into the Glib
-mainloop by turing device events into Glib signals.
+mainloop by turning device events into Glib signals.
 
 :mod:`GLib` and :mod:`GObject` must be available for import via
 `gi.repository` when importing this module.
