@@ -2,6 +2,13 @@ ChangeLog
 =========
 
 
+Development
+-----------
+
+* Detect changes in connected ALSA devices and enable/disable preset,
+  which use these devices in the menu.
+
+
 1.1.2 (2018-09-15)
 ------------------
 
