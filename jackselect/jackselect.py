@@ -224,12 +224,13 @@ class JackSelectApp:
                 ) = get_qjackctl_presets(qjackctl_conf)
                 self.presets = {name.replace('_', ' '): name for name in presets}
                 self.create_menu()
+
             self._conf_mtime = mtime
         elif self.presets or self.presets is None:
             log.warning("QjackCtl configuration file not found.")
 
             if __debug__ and self.presets:
-                log.debug("Removing stored presets.")
+                log.debug("Removing stored presets from memory.")
 
             self.presets = {}
             self.settings = {}
@@ -287,12 +288,12 @@ class JackSelectApp:
             if value != self.jack_status.get('is_started'):
                 if value:
                     self.gui.set_icon('started.png')
-                    log.info("JACK server started.")
+                    log.info("JACK server has started.")
                     self.menu_stop.set_sensitive(True)
                 else:
                     self.gui.set_icon('stopped.png')
-                    log.info("JACK server stopped.")
-                    self.tooltext = "JACK server stopped."
+                    self.tooltext = "JACK server is stopped."
+                    log.info(self.tooltext)
                     self.menu_stop.set_sensitive(False)
 
         self.jack_status[name] = value
@@ -382,10 +383,12 @@ class JackSelectApp:
 
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
+            log.debug("Starting JACK server...")
             self.jackctl.start_server()
 
     def stop_jack_server(self, *args, **kwargs):
         if self.jackctl and self.jack_status.get('is_started'):
+            log.debug("Stopping JACK server...")
             self.jackctl.stop_server()
 
     def quit(self, *args):
