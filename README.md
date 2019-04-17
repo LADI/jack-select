@@ -161,3 +161,25 @@ neccessary when you want to create a source distribution archive).
 [JACK]: http://jackaudio.org/
 [PyGObject]: https://wiki.gnome.org/Projects/PyGObject
 [QjackCtl]: http://qjackctl.sourceforge.net/
+
+
+License
+-------
+
+**jack-select** is licensed under the MIT License.
+
+Please see the file `LICENSE` for more information.
+
+
+Author
+------
+
+**jack-select** was written by Christopher Arndt 2016 - 2019.
+
+
+Acknowledgements
+----------------
+
+**jack-select** incorporates the `pyudev_gobject` library written by Sebastian
+Wiesner and released under the LGPL 2.1. See the header of the
+`jackselect/pyudev_gobject.py` file for license details.
