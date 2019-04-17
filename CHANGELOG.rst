@@ -6,9 +6,9 @@ ChangeLog
 ------------------
 
 * Detect changes in connected ALSA devices and enable/disable preset,
-  which use these devices in the menu (behaviour disabled by defult).
-* Added command line option ``-a``, ``--alsa-monitor`` to explicitly
-  turn on ALSA device monitoring and filtering.
+  which use these devices in the menu.
+* Added command line option ``-a``, ``--no-alsa-monitor`` to disable
+  ALSA device monitoring and filtering.
 * Made some logging improvements.
 
 

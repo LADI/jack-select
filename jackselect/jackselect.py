@@ -431,8 +431,8 @@ def main(args=None):
     from dbus.mainloop.glib import DBusGMainLoop
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument('-a', '--alsa-monitor', action="store_true",
-                    help="Enable ALSA device monitoring and filtering.")
+    ap.add_argument('-a', '--no-alsa-monitor', action="store_true",
+                    help="Disable ALSA device monitoring and filtering.")
     ap.add_argument('-d', '--default', action="store_true",
                     help="Activate default preset.")
     ap.add_argument('-v', '--verbose', action="store_true",
@@ -463,7 +463,7 @@ def main(args=None):
             log.debug("Opening menu...")
             client.OpenMenu()
     except dbus.DBusException:
-        JackSelectApp(bus, monitor_devices=args.alsa_monitor)
+        JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor)
         try:
             return Gtk.main()
         except KeyboardInterrupt:

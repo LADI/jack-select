@@ -42,7 +42,8 @@ between different audio setups with just two mouse clicks.
 Menu entries for presets, which refer to ALSA devices currently not available
 (e.g. those provided by USB interfaces, which are currently un-plugged), will
 be deactivated. The application will detect changes in the sound device
-configuration via udev and update the menu accordingly.
+configuration via udev and update the menu accordingly (this behaviour can
+be disabled via a command line option).
 
 When you hover with the mouse pointer over the systray icon and JACK is
 running, a tooltip will show you the name of the active preset (if known), the
