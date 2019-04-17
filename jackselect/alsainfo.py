@@ -3,8 +3,10 @@
 
 import logging
 import sys
+from collections import namedtuple
 from ctypes import c_char_p, c_int, c_uint, c_ulong, c_void_p, byref, cdll, create_string_buffer
 from enum import IntEnum
+from textwrap import indent
 
 
 log = logging.getLogger(__name__)
@@ -224,12 +226,43 @@ def check_call(fn, args, msg="{errmsg}", **kwargs):
         raise LibAsoundError(msg.format(errmsg=errmsg, **kwargs))
 
 
-def get_cards(stream=SndPcmStream.PLAYBACK):
+class AlsaCard(namedtuple('AlsaCard', ('cardno', 'id', 'name', 'devices'))):
+    __slots__ = ()
 
+    def __repr__(self):
+        s = 'AlsaCard(cardno={c.cardno}, id={c.id!r}, name={c.name!r} devices=['.format(c=self)
+        if self.devices:
+            s += '\n' + indent(',\n'.join(repr(d) for d in self.devices), ' ' * 4)
+            s += '\n'
+
+        s += '])'
+        return s
+
+
+class AlsaDevice(namedtuple('AlsaDevice', ('devno', 'id', 'name', 'stream', 'buffer_sizes',
+                                           'periods', 'channels', 'rates', 'formats',
+                                           'subdevices'))):
+    __slots__ = ()
+
+    def __repr__(self):
+        s = 'AlsaDevice(\n'
+        for name, value in self._asdict().items():
+            if name == 'stream':
+                value = str(value)
+            elif name == 'formats' and value is not None:
+                value = tuple(f[1] for f in value)
+
+            s += '    {}: {},\n'.format(name, value)
+
+        s += ')'
+        return s
+
+
+def get_cards(stream=SndPcmStream.PLAYBACK):
     if stream not in SndPcmStream:
         raise Exception("Unknown stream type: {}".format(stream))
 
-    cards = {}
+    cards = []
     c_card = c_int(-1)
     c_dev = c_int(-1)
     c_dir = c_int(0)
@@ -253,7 +286,6 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
             log.debug("End of card enumeration list reached.")
             break
 
-        cards[c_card.value] = card = {}
         hwdev = "hw:{}".format(c_card.value)
         b_hwdev = create_string_buffer(hwdev.encode())
 
@@ -266,11 +298,15 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                    "Could not allocate memory for snd_ctl_card_info_t.")
         _lib.snd_ctl_card_info(c_handle_p, c_info_p)
 
-        card['cardno'] = c_card.value
-        card["id"] = _lib.snd_ctl_card_info_get_id(c_info_p).decode()
-        card["name"] = _lib.snd_ctl_card_info_get_name(c_info_p).decode()
-        log.debug('Discovered card #%(cardno)i "%(id)s" ("%(name)s").', card)
-        card["devices"] = devices = {}
+        devices = []
+        card = AlsaCard(
+            cardno=c_card.value,
+            id=_lib.snd_ctl_card_info_get_id(c_info_p).decode(),
+            name=_lib.snd_ctl_card_info_get_name(c_info_p).decode(),
+            devices=devices
+        )
+        log.debug('Discovered card #%i "%s" ("%s").', card.cardno, card.id, card.name)
+        cards.append(card)
 
         # device enumeration
         while True:
@@ -292,125 +328,139 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                           s_stream, c_dev.value, errmsg)
                 continue
 
-            devices[c_dev.value] = device = {}
-            device["id"] = bytes.decode(_lib.snd_pcm_info_get_id(c_pcminfo_p))
-            device["name"] = bytes.decode(_lib.snd_pcm_info_get_name(c_pcminfo_p))
-            device['stream'] = stream
-            log.debug('Discovered %s device #%i "%s" ("%s").', s_stream, c_dev.value, device['id'],
-                      device['name'])
+            device_id = bytes.decode(_lib.snd_pcm_info_get_id(c_pcminfo_p))
+            device_name = bytes.decode(_lib.snd_pcm_info_get_name(c_pcminfo_p))
+            log.debug('Discovered %s device #%i "%s" ("%s").', s_stream, c_dev.value, device_id,
+                      device_name)
 
             # count subdevices
             nsubd = _lib.snd_pcm_info_get_subdevices_count(c_pcminfo_p)
             log.debug("Device has %i subdevice(s).", nsubd)
-            device["subdevices"] = subdevices = []
 
-            if not nsubd:
-                continue
-
+            subdevices = []
             # open sound device
-            hwdev = "hw:{},{}".format(c_card.value, c_dev.value)
+            hwdev = "hw:{},{}".format(card.id, c_dev.value)
             b_hwdev = create_string_buffer(hwdev.encode('ascii'))
+            buffer_sizes = periods = channels = rates = formats = None
 
             try:
-                check_call(_lib.snd_pcm_open, (byref(c_pcm_p), b_hwdev, c_int(stream),
-                           SND_PCM_NONBLOCK), "Could not open PCM {stream} device '{dev}'.",
+                check_call(_lib.snd_pcm_open,
+                           (byref(c_pcm_p), b_hwdev, c_int(stream), SND_PCM_NONBLOCK),
+                           "Could not open PCM {stream} device '{dev}'.",
                            stream=s_stream, dev=hwdev)
+                check_call(_lib.snd_pcm_nonblock, (c_pcm_p, 1),
+                           "Nonblock setting error: ")
             except LibAsoundError as exc:
                 log.warning(str(exc))
-                continue
-
-            try:
-                # Get hardware parameter space
-                check_call(_lib.snd_pcm_hw_params_malloc, (byref(c_params_p),),
-                           "Could not allocate memory for snd_pcm_hw_params_t.")
-                check_call(_lib.snd_pcm_hw_params_any, (c_pcm_p, c_params_p),
-                           "Could not get params for {stream} device '{dev}'.", stream=s_stream,
-                           dev=hwdev)
-
-                # Get supported channel counts
-                check_call(_lib.snd_pcm_hw_params_get_channels_min, (c_params_p, byref(c_min)),
-                           "Could not get minimum channels count.")
-
-                check_call(_lib.snd_pcm_hw_params_get_channels_max, (c_params_p, byref(c_max)),
-                           "Could not get maximum channels count.")
-
-                log.debug("Min/max channels: %i, %i", c_min.value, c_max.value)
-                device["channels"] = [
-                    ch for ch in range(c_min.value, c_max.value + 1)
-                    if _lib.snd_pcm_hw_params_test_channels(c_pcm_p, c_params_p, ch) == 0
-                ]
-
-                # Get supported sample rates
-                check_call(_lib.snd_pcm_hw_params_get_rate_min,
-                           (c_params_p, byref(c_min), byref(c_dir)),
-                           "Could not get minimum sample rate.")
-
-                check_call(_lib.snd_pcm_hw_params_get_rate_max,
-                           (c_params_p, byref(c_max), byref(c_dir)),
-                           "Could not get maximum sample rate.")
-
-                log.debug("Min/max sample rate: %i, %i", c_min.value, c_max.value)
-                device["rate"] = [
-                    rate for rate in PCM_RATES
-                    if c_min.value <= rate <= c_max.value and  # noqa:W504
-                    _lib.snd_pcm_hw_params_test_rate(c_pcm_p, c_params_p, rate, 0) == 0
-                ]
-
-                # Get supported sample formats
-                check_call(_lib.snd_pcm_format_mask_malloc, (byref(c_fmask_p),),
-                           "Could not allocate memory for snd_pcm_format_mask_t.")
+            else:
                 try:
-                    check_call(_lib.snd_pcm_hw_params_get_format_mask, (c_params_p, c_fmask_p),
-                               "Could not get sample formats.")
+                    # Get hardware parameter space
+                    check_call(_lib.snd_pcm_hw_params_malloc, (byref(c_params_p),),
+                               "Could not allocate memory for snd_pcm_hw_params_t.")
+                    check_call(_lib.snd_pcm_hw_params_any, (c_pcm_p, c_params_p),
+                               "Could not get params for {stream} device '{dev}'.",
+                               stream=s_stream, dev=hwdev)
 
+                    # Get supported channel counts
+                    check_call(_lib.snd_pcm_hw_params_get_channels_min, (c_params_p, byref(c_min)),
+                               "Could not get minimum channels count.")
+
+                    check_call(_lib.snd_pcm_hw_params_get_channels_max, (c_params_p, byref(c_max)),
+                               "Could not get maximum channels count.")
+
+                    log.debug("Min/max channels: %i, %i", c_min.value, c_max.value)
+                    channels = tuple(
+                        ch for ch in range(c_min.value, c_max.value + 1)
+                        if _lib.snd_pcm_hw_params_test_channels(c_pcm_p, c_params_p, ch) == 0
+                    )
+
+                    # Get supported sample rates
+                    check_call(_lib.snd_pcm_hw_params_get_rate_min,
+                               (c_params_p, byref(c_min), byref(c_dir)),
+                               "Could not get minimum sample rate.")
+
+                    check_call(_lib.snd_pcm_hw_params_get_rate_max,
+                               (c_params_p, byref(c_max), byref(c_dir)),
+                               "Could not get maximum sample rate.")
+
+                    log.debug("Min/max sample rate: %i, %i", c_min.value, c_max.value)
+                    rates = tuple(
+                        rate for rate in PCM_RATES
+                        if c_min.value <= rate <= c_max.value and
+                        _lib.snd_pcm_hw_params_test_rate(c_pcm_p, c_params_p, rate, 0) == 0
+                    )
+
+                    # Get supported sample formats
+                    check_call(_lib.snd_pcm_format_mask_malloc, (byref(c_fmask_p),),
+                               "Could not allocate memory for snd_pcm_format_mask_t.")
+                    try:
+                        check_call(_lib.snd_pcm_hw_params_get_format_mask, (c_params_p, c_fmask_p),
+                                   "Could not get sample formats.")
+
+                    except LibAsoundError as exc:
+                        log.error(str(exc))
+                    else:
+                        formats = tuple(decode_format_mask(c_fmask_p))
+                        log.debug("Sample formats: %s", ",".join(f[1] for f in formats))
+                    finally:
+                        _lib.snd_pcm_format_mask_free(c_fmask_p)
+
+                    # Get supported period times
+                    check_call(_lib.snd_pcm_hw_params_get_periods_min,
+                               (c_params_p, byref(c_min), byref(c_dir)),
+                               "Could not get minimum periods count.")
+
+                    check_call(_lib.snd_pcm_hw_params_get_periods_max,
+                               (c_params_p, byref(c_max), byref(c_dir)),
+                               "Could not get minimum periods count.")
+
+                    log.debug("Min/max periods count: (%i, %i)", c_min.value, c_max.value)
+                    periods = (c_min.value, c_max.value)
+
+                    # Get supported buffer sizes
+                    check_call(_lib.snd_pcm_hw_params_get_buffer_size_min,
+                               (c_params_p, byref(c_min_long)),
+                               "Could not get minimum buffer time.")
+
+                    check_call(_lib.snd_pcm_hw_params_get_buffer_size_max,
+                               (c_params_p, byref(c_max_long)),
+                               "Could not get minimum buffer time.")
+
+                    log.debug("Min/max buffer time: (%i, %i) us", c_min_long.value,
+                              c_max_long.value)
+                    buffer_sizes = tuple(
+                        size for size in PCM_BUFFER_SIZES
+                        if c_min_long.value <= size <= c_max_long.value and
+                        _lib.snd_pcm_hw_params_test_buffer_size(c_pcm_p, c_params_p, size) == 0
+                    )
+
+                    # List subdevices
+                    for subd in range(0, nsubd):
+                        _lib.snd_pcm_info_set_subdevice(c_pcminfo_p, c_int(subd))
+                        sub_name = _lib.snd_pcm_info_get_subdevice_name(c_pcminfo_p).decode()
+                        log.debug('Discovered subdevice: "%s"', sub_name)
+                        subdevices.append(sub_name)
                 except LibAsoundError as exc:
-                    log.error(str(exc))
-                else:
-                    device["format"] = tuple(decode_format_mask(c_fmask_p))
-                    log.debug("Sample formats: %r", [f[1] for f in device["format"]])
+                    log.warning(exc)
                 finally:
-                    _lib.snd_pcm_format_mask_free(c_fmask_p)
+                    _lib.snd_pcm_close(c_pcm_p)
+                    _lib.snd_pcm_hw_params_free(c_params_p)
+                    _lib.snd_pcm_info_free(c_pcminfo_p)
 
-                # Get supported period times
-                check_call(_lib.snd_pcm_hw_params_get_periods_min,
-                           (c_params_p, byref(c_min), byref(c_dir)),
-                           "Could not get minimum periods count.")
-
-                check_call(_lib.snd_pcm_hw_params_get_periods_max,
-                           (c_params_p, byref(c_max), byref(c_dir)),
-                           "Could not get minimum periods count.")
-
-                log.debug("Min/max periods count: (%i, %i)", c_min.value, c_max.value)
-                device['periods'] = (c_min.value, c_max.value)
-
-                # Get supported buffer sizes
-                check_call(_lib.snd_pcm_hw_params_get_buffer_size_min,
-                           (c_params_p, byref(c_min_long)),
-                           "Could not get minimum buffer time.")
-
-                check_call(_lib.snd_pcm_hw_params_get_buffer_size_max,
-                           (c_params_p, byref(c_max_long)),
-                           "Could not get minimum buffer time.")
-
-                log.debug("Min/max buffer time: (%i, %i) us", c_min_long.value, c_max_long.value)
-                device['buffer_size'] = [
-                    size for size in PCM_BUFFER_SIZES
-                    if c_min_long.value <= size <= c_max_long.value and  # noqa:W504
-                    _lib.snd_pcm_hw_params_test_buffer_size(c_pcm_p, c_params_p, size) == 0
-                ]
-
-                # List subdevices
-                for subd in range(0, nsubd):
-                    _lib.snd_pcm_info_set_subdevice(c_pcminfo_p, c_int(subd))
-                    sub_name = _lib.snd_pcm_info_get_subdevice_name(c_pcminfo_p).decode()
-                    log.debug('Discovered subdevice: "%s"', sub_name)
-                    subdevices.append(sub_name)
-            except LibAsoundError as exc:
-                log.warning(exc)
-            finally:
-                _lib.snd_pcm_close(c_pcm_p)
-                _lib.snd_pcm_hw_params_free(c_params_p)
-                _lib.snd_pcm_info_free(c_pcminfo_p)
+            devices.append(
+                AlsaDevice(
+                    devno=c_dev.value,
+                    id=device_id,
+                    name=device_name,
+                    stream=stream,
+                    buffer_sizes=buffer_sizes,
+                    periods=periods,
+                    channels=channels,
+                    rates=rates,
+                    formats=formats,
+                    subdevices=subdevices
+                )
+            )
 
         _lib.snd_ctl_close(c_handle_p)
         _lib.snd_ctl_card_info_free(c_info_p)
@@ -419,37 +469,35 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
 
 
 class AlsaInfo:
-    def __init__(self):
-        self._playback = get_cards()
-        self._capture = get_cards(SndPcmStream.CAPTURE)
+    def _make_device_list(self, cards):
+        devs = []
+        for card in cards:
+            if not card.devices:
+                continue
+
+            devs.append('hw:%i' % card.cardno)
+            devs.append('hw:%s' % card.id)
+
+            for dev in card.devices:
+                devs.append('hw:%i,%i' % (card.cardno, dev.devno))
+                devs.append('hw:%s,%i' % (card.id, dev.devno))
+                devs.append('hw:%s,%s' % (card.id, dev.id))
+
+        return devs
 
     @property
     def playback_devices(self):
-        devs = []
-        for card, info in self._playback.items():
-            devs.append('hw:%s' % info['id'])
-            devs.append('hw:%i' % card)
-
-            for dev, dinfo in info['devices'].items():
-                devs.append('hw:%i,%i' % (card, dev))
-                devs.append('hw:%s,%i' % (info['id'], dev))
-                devs.append('hw:%s,%s' % (info['id'], dinfo['id']))
-
-        return devs
+        cards = getattr(self, '_playback', None)
+        if cards is None:
+            self._playback = cards = get_cards(stream=SndPcmStream.PLAYBACK)
+        return self._make_device_list(cards)
 
     @property
     def capture_devices(self):
-        devs = []
-        for card, info in self._capture.items():
-            devs.append('hw:%s' % info['id'])
-            devs.append('hw:%i' % card)
-
-            for dev, dinfo in info['devices'].items():
-                devs.append('hw:%i,%i' % (card, dev))
-                devs.append('hw:%s,%i' % (info['id'], dev))
-                devs.append('hw:%s,%s' % (info['id'], dinfo['id']))
-
-        return devs
+        cards = getattr(self, '_capture', None)
+        if cards is None:
+            self._capture = cards = get_cards(stream=SndPcmStream.CAPTURE)
+        return self._make_device_list(cards)
 
     @property
     def devices(self):
@@ -458,12 +506,27 @@ class AlsaInfo:
 
 
 if __name__ == "__main__":
-    import pprint
-
     logging.basicConfig(level=logging.DEBUG if '-v' in sys.argv[1:] else logging.INFO,
                         format="[%(name)s] %(levelname)s: %(message)s")
 
-    if '-r' in sys.argv[1:]:
-        pprint.pprint(get_cards(SndPcmStream.CAPTURE))
+    ai = AlsaInfo()
+
+    if '-r' in sys.argv:
+        for card in get_cards(stream=SndPcmStream.CAPTURE):
+            print(card)
+
+        for card in ai.capture_devices:
+            print(card)
+
+        print("Capture devices")
+        print("----------------\n")
+
     else:
-        pprint.pprint(get_cards())
+        for card in get_cards(stream=SndPcmStream.PLAYBACK):
+            print(card)
+
+        print("Playback devices")
+        print("----------------\n")
+
+        for card in ai.playback_devices:
+            print(card)
