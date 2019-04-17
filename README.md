@@ -136,8 +136,8 @@ only for your current user:
 Requirements
 ------------
 
-This application works with the DBus-version of JACK only. It written in Python
-3 using the [PyGObject] bindings for GTK 3. Python 2 is not supported.
+This application works with the DBus-version of JACK only. It is written in
+Python 3 using the [PyGObject] bindings for GTK 3. Python 2 is not supported.
 
 In addition to PyGObject, the following third-party Python libraries are
 required:

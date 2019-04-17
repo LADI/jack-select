@@ -10,8 +10,8 @@ select a preset, its JACK engine and driver configuration settings are loaded
 via DBus into JACK and then the server is restarted. This allows you to switch
 between different audio setups with just two mouse clicks.
 
-**jack-select** works with the DBus-version of JACK only. It written in Python
-3 using the ``PyGObject`` bindings for GTK 3. Python 2 is not supported.
+**jack-select** works with the DBus-version of JACK only. It is written in
+Python 3 using the ``PyGObject`` bindings for GTK 3. Python 2 is not supported.
 
 It is available from the source code repository on Github:
 
