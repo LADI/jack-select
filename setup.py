@@ -3,9 +3,9 @@
 """A systray app to set the JACK configuration from QjackCtl presets via DBus.
 
 This application displays an icon in the system tray (also known as
-notification area) of your desktop, which shows the status of the JACK audio
+notification area) of your desktop, which shows the status of the JACK_ audio
 server and when you click on it, a menu pops up, which lets you quickly select
-from the JACK configuration presets you created with [QjackCtl]. When you
+from the JACK configuration presets you created with QjackCtl_. When you
 select a preset, its JACK engine and driver configuration settings are loaded
 via DBus into JACK and then the server is restarted. This allows you to switch
 between different audio setups with just two mouse clicks.
@@ -13,11 +13,11 @@ between different audio setups with just two mouse clicks.
 **jack-select** works with the DBus-version of JACK only. It is written in
 Python 3 using the ``PyGObject`` bindings for GTK 3. Python 2 is not supported.
 
-It is available from the source code repository on Github:
+It is available from the source code repository on GitHub:
 
 https://github.com/SpotlightKid/jack-select
 
-Releases can be downloaded from the Python Package Index ([PyPI]).
+Releases can be downloaded from the Python Package Index:
 
 https://pypi.org/project/jack-select
 
@@ -25,6 +25,10 @@ https://pypi.org/project/jack-select
 Repository:
 
 https://aur.archlinux.org/packages/jack-select/
+
+
+.. _jack: http://jackaudio.org/
+.. _qjackctl: http://qjackctl.sourceforge.net/
 
 """
 
