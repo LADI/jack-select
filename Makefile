@@ -43,4 +43,4 @@ wheel: $(GENERATED_FILES)
 	$(PYTHON) setup.py bdist_wheel
 
 pypi-upload: sdist wheel
-	$(TWINE) upload --skip-existing dist/*.gz dist/*.whl
+	$(TWINE) upload --skip-existing dist/*.tar.gz dist/*.whl
