@@ -34,19 +34,27 @@ def get_qjackctl_presets(qjackctl_conf):
 
     presets = []
     if 'Presets' in config:
-        presets = ((k, v) for k, v in config['Presets'].items()
-                   if k != 'DefPreset')
-        presets = [v for k, v in sorted(presets)]
+        presets = [v for k, v in sorted(config['Presets'].items())
+                   if k != 'DefPreset']
 
     try:
         default_preset = config.get('Presets', 'DefPreset')
-    except:
-        default_preset = presets[0] if presets else None
+    except configparser.Error:
+        default_preset = presets[0] if presets else '(default)'
 
     settings = {}
     if 'Settings' in config:
+        if not presets:
+            presets = [default_preset]
+
         for name in config['Settings']:
-            preset, setting = name.split('\\', 1)
+            try:
+                preset, setting = name.split('\\', 1)
+            except ValueError:
+                # only the default preset was saved
+                setting = name
+                preset = default_preset
+
             setting = setting.lower()
             value = config.get('Settings', name)
 

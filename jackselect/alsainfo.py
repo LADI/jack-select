@@ -351,7 +351,7 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 log.debug("Min/max sample rate: %i, %i", c_min.value, c_max.value)
                 device["rate"] = [
                     rate for rate in PCM_RATES
-                    if c_min.value <= rate <= c_max.value and
+                    if c_min.value <= rate <= c_max.value and  # noqa:W504
                     _lib.snd_pcm_hw_params_test_rate(c_pcm_p, c_params_p, rate, 0) == 0]
 
                 # Get supported sample formats
@@ -393,7 +393,7 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 log.debug("Min/max buffer time: (%i, %i) us", c_min_long.value, c_max_long.value)
                 device['buffer_size'] = [
                     size for size in PCM_BUFFER_SIZES
-                    if c_min_long.value <= size <= c_max_long.value and
+                    if c_min_long.value <= size <= c_max_long.value and  # noqa:W504
                     _lib.snd_pcm_hw_params_test_buffer_size(c_pcm_p, c_params_p, size) == 0]
 
                 # List subdevices

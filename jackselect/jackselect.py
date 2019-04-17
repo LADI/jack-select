@@ -218,19 +218,20 @@ class JackSelectApp:
             if force or changed or not self.presets:
                 log.debug("(Re-)Reading configuration.")
                 (
-                    self.presets,
+                    presets,
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf)
-                self._conf_mtime = mtime
+                self.presets = {name.replace('_', ' '): name for name in presets}
                 self.create_menu()
+            self._conf_mtime = mtime
         elif self.presets or self.presets is None:
-            self.log.warning("QjackCtl configuration file not found.")
+            log.warning("QjackCtl configuration file not found.")
 
             if __debug__ and self.presets:
-                self.debug("Removing stored presets.")
+                log.debug("Removing stored presets.")
 
-            self.presets = []
+            self.presets = {}
             self.settings = {}
             self.default_preset = None
             self.create_menu()
@@ -262,10 +263,10 @@ class JackSelectApp:
         self.gui.menu = Gtk.Menu()
 
         if self.presets:
-            for preset in sorted(self.presets):
-                item = self.gui.add_menu_item(self.activate_preset, preset)
+            for displayname, name in sorted(self.presets.items()):
+                item = self.gui.add_menu_item(self.activate_preset, displayname)
 
-                if not self.check_alsa_settings(preset):
+                if not self.check_alsa_settings(name):
                     item.set_sensitive(False)
         else:
             item = self.gui.add_menu_item(None, "No presets found")
@@ -353,7 +354,7 @@ class JackSelectApp:
 
     def activate_preset(self, m_item=None, **kwargs):
         if m_item:
-            preset = m_item.get_label()
+            preset = self.presets.get(m_item.get_label())
         else:
             preset = kwargs.get('preset', self.default_preset)
 

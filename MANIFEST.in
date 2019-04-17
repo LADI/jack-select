@@ -5,4 +5,3 @@ include *.desktop
 include LICENSE
 include Makefile
 include jack-select.1*
-graft jackselect/images
