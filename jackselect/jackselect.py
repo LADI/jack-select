@@ -249,14 +249,20 @@ class JackSelectApp:
 
         dev = driver.get('device')
         if dev and dev not in self.alsainfo.devices:
+            log.debug("Device '%s' used by preset '%s' not found.",
+                      dev, preset)
             return False
 
         dev = driver.get('playback')
         if dev and dev not in self.alsainfo.playback_devices:
+            log.debug("Playback device '%s' used by preset '%s' not found.",
+                      dev, preset)
             return False
 
         dev = driver.get('capture')
         if dev and dev not in self.alsainfo.capture_devices:
+            log.debug("Capture device '%s' used by preset '%s' not found.",
+                      dev, preset)
             return False
 
         return True
