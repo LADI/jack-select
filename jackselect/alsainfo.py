@@ -337,7 +337,8 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 log.debug("Min/max channels: %i, %i", c_min.value, c_max.value)
                 device["channels"] = [
                     ch for ch in range(c_min.value, c_max.value + 1)
-                    if _lib.snd_pcm_hw_params_test_channels(c_pcm_p, c_params_p, ch) == 0]
+                    if _lib.snd_pcm_hw_params_test_channels(c_pcm_p, c_params_p, ch) == 0
+                ]
 
                 # Get supported sample rates
                 check_call(_lib.snd_pcm_hw_params_get_rate_min,
@@ -352,7 +353,8 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 device["rate"] = [
                     rate for rate in PCM_RATES
                     if c_min.value <= rate <= c_max.value and  # noqa:W504
-                    _lib.snd_pcm_hw_params_test_rate(c_pcm_p, c_params_p, rate, 0) == 0]
+                    _lib.snd_pcm_hw_params_test_rate(c_pcm_p, c_params_p, rate, 0) == 0
+                ]
 
                 # Get supported sample formats
                 check_call(_lib.snd_pcm_format_mask_malloc, (byref(c_fmask_p),),
@@ -394,7 +396,8 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
                 device['buffer_size'] = [
                     size for size in PCM_BUFFER_SIZES
                     if c_min_long.value <= size <= c_max_long.value and  # noqa:W504
-                    _lib.snd_pcm_hw_params_test_buffer_size(c_pcm_p, c_params_p, size) == 0]
+                    _lib.snd_pcm_hw_params_test_buffer_size(c_pcm_p, c_params_p, size) == 0
+                ]
 
                 # List subdevices
                 for subd in range(0, nsubd):
