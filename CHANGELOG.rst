@@ -2,14 +2,14 @@ ChangeLog
 =========
 
 
-Development
------------
+1.2.0 (2019-04-17)
+------------------
 
 * Detect changes in connected ALSA devices and enable/disable preset,
   which use these devices in the menu (behaviour disabled by defult).
-* Add command line option ``-a``, ``--alsa-monitor`` to explicitly
+* Added command line option ``-a``, ``--alsa-monitor`` to explicitly
   turn on ALSA device monitoring and filtering.
-* Some logging improvements.
+* Made some logging improvements.
 
 
 1.1.2 (2018-09-15)
