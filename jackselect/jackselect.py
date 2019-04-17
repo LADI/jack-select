@@ -213,7 +213,8 @@ class JackSelectApp:
             changed = mtime > getattr(self, '_conf_mtime', 0)
 
             if changed:
-                log.debug("QjackCtl configuration file mtime changed or previously unknown.")
+                log.debug("QjackCtl configuration file mtime changed "
+                          "or previously unknown.")
 
             if force or changed or not self.presets:
                 log.debug("(Re-)Reading configuration.")
@@ -222,7 +223,8 @@ class JackSelectApp:
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf)
-                self.presets = {name.replace('_', ' '): name for name in presets}
+                self.presets = {name.replace('_', ' '): name
+                                for name in presets}
                 self.create_menu()
 
             self._conf_mtime = mtime
@@ -319,8 +321,9 @@ class JackSelectApp:
         if device:
             dev = device.device_path.split('/')[-1]
 
-        if init or (device.action in ('change', 'remove') and dev.startswith('card')):
-            log.debug("ALSA card change signal received. Collecting device info...")
+        if init or (device.action in ('change', 'remove')
+                    and dev.startswith('card')):
+            log.debug("ALSA card change signalled. Collecting device info...")
             self.alsainfo = AlsaInfo()
 
             if device and device.action != 'init':
