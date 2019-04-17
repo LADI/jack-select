@@ -400,12 +400,18 @@ class JackSelectApp:
     def start_jack_server(self, *args, **kwargs):
         if self.jackctl and not self.jack_status.get('is_started'):
             log.debug("Starting JACK server...")
-            self.jackctl.start_server()
+            try:
+                self.jackctl.start_server()
+            except Exception as exc:
+                log.error("Could not start JACK server: %s", exc)
 
     def stop_jack_server(self, *args, **kwargs):
         if self.jackctl and self.jack_status.get('is_started'):
             log.debug("Stopping JACK server...")
-            self.jackctl.stop_server()
+            try:
+                self.jackctl.stop_server()
+            except Exception as exc:
+                log.error("Could not stop JACK server: %s", exc)
 
     def quit(self, *args):
         log.debug("Exiting main loop.")
