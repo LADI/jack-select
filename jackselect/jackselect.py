@@ -16,15 +16,13 @@ from gi.repository.GdkPixbuf import Pixbuf
 import dbus
 import dbus.service
 
-from pyudev import Context, Monitor
-
 from pkg_resources import resource_filename
 from xdg import BaseDirectory as xdgbase
 
 from .alsainfo import AlsaInfo
+from .devmonitor import AlsaDevMonitor
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
-from .pyudev_gobject import MonitorObserver
 from .qjackctlconf import get_qjackctl_presets
 
 
@@ -167,10 +165,11 @@ class JackSelectService(dbus.service.Object):
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self, bus=None):
+    def __init__(self, bus=None, monitor_devices=True):
         if bus is None:
             bus = dbus.SessionBus()
 
+        self.monitor_devices = monitor_devices
         self.gui = Indicator('jack.png', "JACK-Select")
         self.gui.icon.set_has_tooltip(True)
         self.gui.icon.connect("query-tooltip", self.tooltip_query)
@@ -180,8 +179,11 @@ class JackSelectApp:
         self.jackctl = JackCtlInterface(dbus_obj)
         self.jackcfg = JackCfgInterface(dbus_obj)
 
-        # get ALSA devices and their parameters
-        self.handle_device_change(None, init=True)
+        if monitor_devices:
+            # get ALSA devices and their parameters
+            self.handle_device_change(init=True)
+        else:
+            self.alsainfo = None
 
         # load QjackCtl presets
         self.presets = None
@@ -197,13 +199,10 @@ class JackSelectApp:
         # add & start DBUS service
         self.dbus_service = JackSelectService(self, bus)
 
-        # set up udev device monitor
-        context = Context()
-        self.udev_monitor = Monitor.from_netlink(context)
-        self.udev_monitor.filter_by(subsystem='sound')
-        self.udev_observer = MonitorObserver(self.udev_monitor)
-        self.udev_observer.connect('device-event', self.handle_device_change)
-        self.udev_monitor.start()
+        if monitor_devices:
+            # set up udev device monitor
+            self.alsadevmonitor = AlsaDevMonitor(self.handle_device_change)
+            self.alsadevmonitor.start()
 
     def load_presets(self, force=False):
         qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
@@ -272,10 +271,13 @@ class JackSelectApp:
         self.gui.menu = Gtk.Menu()
 
         if self.presets:
-            for displayname, name in sorted(self.presets.items()):
-                item = self.gui.add_menu_item(self.activate_preset, displayname)
+            if not self.alsainfo:
+                log.debug("ALSA device info not available. Filtering disabled.")
 
-                if not self.check_alsa_settings(name):
+            for label, name in sorted(self.presets.items()):
+                item = self.gui.add_menu_item(self.activate_preset, label)
+
+                if self.alsainfo and not self.check_alsa_settings(name):
                     item.set_sensitive(False)
         else:
             item = self.gui.add_menu_item(None, "No presets found")
@@ -323,14 +325,19 @@ class JackSelectApp:
             except KeyError:
                 self.tooltext = "No status available."
 
-    def handle_device_change(self, observer, device=None, init=False):
+    def handle_device_change(self, observer=None, device=None, init=False):
         if device:
             dev = device.device_path.split('/')[-1]
 
         if init or (device.action in ('change', 'remove')
                     and dev.startswith('card')):
-            log.debug("ALSA card change signalled. Collecting device info...")
-            self.alsainfo = AlsaInfo()
+            try:
+                log.debug("Sound device change signalled. Collecting ALSA "
+                          "device info...")
+                self.alsainfo = AlsaInfo(deferred=False)
+            except Exception as exc:
+                log.warn("Could not get ALSA device list: %s", exc)
+                self.alsainfo = None
 
             if device and device.action != 'init':
                 self.load_presets(force=True)
@@ -418,6 +425,8 @@ def main(args=None):
     from dbus.mainloop.glib import DBusGMainLoop
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument('-a', '--alsa-monitor', action="store_true",
+                    help="Enable ALSA device monitoring and filtering.")
     ap.add_argument('-d', '--default', action="store_true",
                     help="Activate default preset.")
     ap.add_argument('-v', '--verbose', action="store_true",
@@ -448,7 +457,7 @@ def main(args=None):
             log.debug("Opening menu...")
             client.OpenMenu()
     except dbus.DBusException:
-        JackSelectApp(bus)
+        JackSelectApp(bus, monitor_devices=args.alsa_monitor)
         try:
             return Gtk.main()
         except KeyboardInterrupt:

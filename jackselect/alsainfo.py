@@ -469,6 +469,10 @@ def get_cards(stream=SndPcmStream.PLAYBACK):
 
 
 class AlsaInfo:
+    def __init__(self, deferred=True):
+        if not deferred:
+            _ = self.devices  # noqa
+
     def _make_device_list(self, cards):
         devs = []
         for card in cards:
