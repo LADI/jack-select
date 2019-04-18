@@ -2,6 +2,18 @@ ChangeLog
 =========
 
 
+1.3.0 (2019-04-18)
+------------------
+
+* Added command line option ``-i``, ``--ignore-default`` to ignore the
+  '(default)' preset if any other presets are stored in the QjackCtl
+  configuration.
+* Fixed handling different variants of the presence / non-presence of the
+  '(default)' preset when reading the QjackCtl configuration.
+* Added command line option ``--version`` to show the program version.
+* Updated the UNIX manual page.
+
+
 1.2.0 (2019-04-17)
 ------------------
 
