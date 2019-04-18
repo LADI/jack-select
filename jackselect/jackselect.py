@@ -80,7 +80,7 @@ class Indicator:
         """
         self.icon.set_from_pixbuf(self._get_icon(icon))
 
-    def add_menu_item(self, command=None, title=None, icon=None):
+    def add_menu_item(self, command=None, title=None, icon=None, data=None):
         """Add mouse right click menu item.
 
         Args:
@@ -100,6 +100,7 @@ class Indicator:
         if command:
             m_item.connect('activate', command)
 
+        m_item.data = data
         self.menu.append(m_item)
         return m_item
 
@@ -223,7 +224,7 @@ class JackSelectApp:
                     self.settings,
                     self.default_preset
                 ) = get_qjackctl_presets(qjackctl_conf, self.ignore_default)
-                self.presets = {name.replace('_', ' '): name
+                self.presets = {name: name.replace('_', ' ')
                                 for name in preset_names}
                 self.create_menu()
 
@@ -275,8 +276,9 @@ class JackSelectApp:
             if not self.alsainfo:
                 log.debug("ALSA device info not available. Filtering disabled.")
 
-            for label, name in sorted(self.presets.items()):
-                item = self.gui.add_menu_item(self.activate_preset, label)
+            callback = self.activate_preset
+            for name, label in sorted(self.presets.items()):
+                item = self.gui.add_menu_item(callback, label, data=name)
 
                 if self.alsainfo and not self.check_alsa_settings(name):
                     item.set_sensitive(False)
@@ -311,7 +313,9 @@ class JackSelectApp:
         if self.jack_status.get('is_started'):
             try:
                 if self.active_preset:
-                    self.tooltext = "<b>[%s]</b>\n" % self.active_preset[1]
+                    label = self.presets.get(self.active_preset,
+                                             self.active_preset)
+                    self.tooltext = "<b>[%s]</b>\n" % label
                 else:
                     self.tooltext = "<i><b>Unknown configuration</b></i>\n"
 
@@ -377,7 +381,7 @@ class JackSelectApp:
 
     def activate_preset(self, m_item=None, **kwargs):
         if m_item:
-            preset = self.presets.get(m_item.get_label())
+            preset = m_item.data
         else:
             preset = kwargs.get('preset')
 
@@ -399,7 +403,7 @@ class JackSelectApp:
                              for k, v in sorted(settings.items())])
                     s.append('')
 
-                log.debug("Settings: %s", "\n".join(s))
+                log.debug("Settings:\n%s", "\n".join(s))
 
             self.stop_jack_server()
             GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
