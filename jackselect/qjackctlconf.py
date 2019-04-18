@@ -25,9 +25,10 @@ PARAM_MAPPING = {
     'mididriver': 'midi',
     # 'snoop': '???'
 }
+DEFAULT_PRESET = '(default)'
 
 
-def get_qjackctl_presets(qjackctl_conf, ignore_default_preset=False):
+def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
     config = configparser.ConfigParser()
     config.optionxform = lambda option: option
     config.read(qjackctl_conf)
@@ -41,12 +42,9 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default_preset=False):
                 preset_name, setting = name.split('\\', 1)
             except ValueError:
                 # The default (nameless) preset was saved.
-                if ignore_default_preset:
-                    continue
-
                 # It uses settings keys without a preset name prefix.
                 setting = name
-                preset_name = '(default)'
+                preset_name = DEFAULT_PRESET
 
             preset_names.add(preset_name)
             setting = setting.lower()
@@ -78,13 +76,19 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default_preset=False):
 
             settings[preset_name][component][setting] = value
 
+    if (ignore_default and DEFAULT_PRESET in settings and len(settings) > 1):
+        del settings[DEFAULT_PRESET]
+
+        if DEFAULT_PRESET in preset_names:
+            preset_names.remove(DEFAULT_PRESET)
+
     default_preset = config.get('Presets', 'DefPreset', fallback=None)
 
     if default_preset not in preset_names:
         default_preset = None
 
-    if not default_preset and '(default)' in preset_names:
-        default_preset = '(default)'
+    if not default_preset and DEFAULT_PRESET in preset_names:
+        default_preset = DEFAULT_PRESET
 
     return list(preset_names), settings, default_preset
 

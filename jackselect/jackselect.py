@@ -165,11 +165,12 @@ class JackSelectService(dbus.service.Object):
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self, bus=None, monitor_devices=True):
+    def __init__(self, bus=None, monitor_devices=True, ignore_default=False):
         if bus is None:
             bus = dbus.SessionBus()
 
         self.monitor_devices = monitor_devices
+        self.ignore_default = ignore_default
         self.gui = Indicator('jack.png', "JACK-Select")
         self.gui.icon.set_has_tooltip(True)
         self.gui.icon.connect("query-tooltip", self.tooltip_query)
@@ -221,7 +222,7 @@ class JackSelectApp:
                     preset_names,
                     self.settings,
                     self.default_preset
-                ) = get_qjackctl_presets(qjackctl_conf, True)
+                ) = get_qjackctl_presets(qjackctl_conf, self.ignore_default)
                 self.presets = {name.replace('_', ' '): name
                                 for name in preset_names}
                 self.create_menu()
@@ -446,6 +447,9 @@ def main(args=None):
                     help="Disable ALSA device monitoring and filtering.")
     ap.add_argument('-d', '--default', action="store_true",
                     help="Activate default preset.")
+    ap.add_argument('-i', '--ignore-default', action="store_true",
+                    help="Ignore the nameless '(default)' preset if any other "
+                         "presets are stored in the QjackCtl configuration.")
     ap.add_argument('-v', '--verbose', action="store_true",
                     help="Be verbose about what the script does.")
     ap.add_argument('preset', nargs='?',
@@ -475,7 +479,8 @@ def main(args=None):
             client.OpenMenu()
     except dbus.DBusException as exc:
         log.debug("Exception: %s", exc)
-        JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor)
+        JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor,
+                      ignore_default=args.ignore_default)
         try:
             return Gtk.main()
         except KeyboardInterrupt:
