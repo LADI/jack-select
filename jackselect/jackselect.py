@@ -24,6 +24,7 @@ from .devmonitor import AlsaDevMonitor
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
 from .qjackctlconf import get_qjackctl_presets
+from .version import __version__
 
 
 log = logging.getLogger('jack-select')
@@ -447,6 +448,9 @@ def main(args=None):
     from dbus.mainloop.glib import DBusGMainLoop
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument('--version', action="version",
+                    version="%%(prog)s %s" % __version__,
+                    help="Show program version and exit.")
     ap.add_argument('-a', '--no-alsa-monitor', action="store_true",
                     help="Disable ALSA device monitoring and filtering.")
     ap.add_argument('-d', '--default', action="store_true",
