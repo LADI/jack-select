@@ -35,9 +35,11 @@ https://aur.archlinux.org/packages/jack-select/
 import setuptools
 
 
+exec(open('jackselect/version.py').read())
+
 setuptools.setup(
     name="jack-select",
-    version="1.2.0",
+    version=__version__,  # noqa
     url="https://github.com/SpotlightKid/jack-select",
     author="Christopher Arndt",
     author_email="chris@chrisarndt.de",
