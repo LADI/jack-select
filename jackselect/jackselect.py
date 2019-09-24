@@ -395,17 +395,6 @@ class JackSelectApp:
         if settings:
             self.jackcfg.activate_preset(settings)
             log.info("Activated preset: %s", preset)
-
-            if __debug__:
-                s = []
-                for component, settings in settings.items():
-                    s.append("[%s]" % component)
-                    s.extend(["%s: %r" % (k, v)
-                             for k, v in sorted(settings.items())])
-                    s.append('')
-
-                log.debug("Settings:\n%s", "\n".join(s))
-
             self.stop_jack_server()
             GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
             self.active_preset = preset
