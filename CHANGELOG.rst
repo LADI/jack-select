@@ -1,6 +1,14 @@
 ChangeLog
 =========
 
+1.3.1 (2019-09-25)
+------------------
+
+* Added support for missing JACK engine and driver parameters (a5705b8).
+* Fixed and improved QjackCtl settings to JACK parameters mapping (878b8ca).
+* Improved debug logging of setting changes when activating a preset
+  (c865bab, a5705b8).
+
 
 1.3.0 (2019-04-18)
 ------------------
