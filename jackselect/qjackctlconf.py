@@ -14,6 +14,7 @@ PARAM_MAPPING = {
     'timeout': ('engine', 'client-timeout'),
     'portmax': ('engine', 'port-max'),
     'servername': ('engine', 'name'),
+    'slavedrivers': ('engine', 'slave-drivers'),
     'chan': ('driver', ('inchannels', 'outchannels')),
     'clocksource': 'clock-source',
     'frames': 'period',
