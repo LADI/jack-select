@@ -11,26 +11,34 @@ import dbus
 log = logging.getLogger(__name__)
 SETTINGS = {
     'engine': (
+        ('client-timeout', dbus.Int32),
+        'clock-source',
         'driver',
+        'name',
+        'port-max',
         'realtime',
         ('realtime-priority', dbus.Int32),
-        'port-max',
+        'replace-registry',
+        ('self-connect-mode', dbus.Byte),
+        'slave-drivers',
+        'sync',
+        'temporary',
         'verbose',
-        ('client-timeout', dbus.Int32),
     ),
     'driver': (
         'capture',
-        'playback',
         'device',
-        'rate',
-        'period',
+        ('dither', dbus.Byte),
+        'hwmeter',
+        'hwmon',
+        'inchannels',
+        'midi-driver',
+        'monitor',
         'nperiods',
         'outchannels',
-        'inchannels',
-        ('channels', dbus.Int32),
-        'midi',
-        'hwmon',
-        'hwmeter',
+        'period',
+        'playback',
+        'rate',
         'shorts',
         'softmode',
     )
@@ -130,7 +138,7 @@ class JackCfgInterface(JackBaseInterface):
 
     def set_engine_parameter(self, parameter, value, optional=True):
         if not self.engine_has_feature(parameter):
-            return False
+            return 2
         elif optional:
             pvalue = self._if.GetParameterValue(["engine", parameter])
 
@@ -141,7 +149,7 @@ class JackCfgInterface(JackBaseInterface):
                 return bool(self._if.SetParameterValue(["engine", parameter],
                                                        value))
             else:
-                return False
+                return 3
         else:
             return bool(self._if.SetParameterValue(["engine", parameter],
                                                    value))
@@ -164,13 +172,13 @@ class JackCfgInterface(JackBaseInterface):
 
     def set_driver_parameter(self, parameter, value, optional=True):
         if not self.driver_has_feature(parameter):
-            return False
+            return 2
         elif optional:
             if value != self._if.GetParameterValue(["driver", parameter])[2]:
                 return bool(self._if.SetParameterValue(["driver", parameter],
                                                        value))
             else:
-                return False
+                return 3
         else:
             return bool(self._if.SetParameterValue(["driver", parameter],
                                                    value))
@@ -188,22 +196,31 @@ class JackCfgInterface(JackBaseInterface):
                 value = csettings.get(setting)
 
                 if value is None:
+                    log.debug("Resetting %s.%s", component, setting)
                     self._if.ResetParameterValue([component, setting])
                     continue
 
                 if stype:
-                    value = stype(value)
+                    dbus_value = stype(value)
                 elif isinstance(value, bool):
-                    value = dbus.Boolean(value)
+                    dbus_value = dbus.Boolean(value)
                 elif isinstance(value, int):
-                    value = dbus.UInt32(value)
+                    dbus_value = dbus.UInt32(value)
                 elif isinstance(value, str):
-                    value = dbus.String(value)
+                    dbus_value = dbus.String(value)
                 else:
                     log.warning("Unknown type %s for setting '%s' = %r.",
                                 type(value), setting, value)
+                    dbus_value = value
 
                 if component == 'engine':
-                    self.set_engine_parameter(setting, value)
+                    setter = self.set_engine_parameter
                 elif component == 'driver':
-                    self.set_driver_parameter(setting, value)
+                    setter = self.set_driver_parameter
+
+                log.debug("Setting %s.%s = %r", component, setting, value)
+                result = setter(setting, dbus_value)
+
+                if result not in (0, 3):
+                    log.error("Setting %s setting '%s' failed (value %r), return value %s",
+                              component, setting, value, result)
