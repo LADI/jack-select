@@ -13,17 +13,40 @@ PARAM_MAPPING = {
     'verbose': ('engine', 'verbose'),
     'timeout': ('engine', 'client-timeout'),
     'portmax': ('engine', 'port-max'),
-    'samplerate': 'rate',
+    'servername': ('engine', 'name'),
+    'chan': ('driver', ('inchannels', 'outchannels')),
+    'clocksource': 'clock-source',
     'frames': 'period',
-    'periods': 'nperiods',
-    'interface': 'device',
     'indevice': 'capture',
-    'outdevice': 'playback',
-    'chan': 'channels',
     'inlatency': 'input-latency',
+    'interface': 'device',
+    'mididriver': 'midi-driver',
+    'outdevice': 'playback',
     'outlatency': 'output-latency',
-    'mididriver': 'midi',
+    'periods': 'nperiods',
+    'samplerate': 'rate',
+    'selfconnectmode': 'self-connect-mode',
     # 'snoop': '???'
+}
+VALUE_MAPPING = {
+    'dither': {
+        '0': b'n',
+        '1': b'r',
+        '2': b's',
+        '3': b't',
+    },
+    'clock-source': {
+        'c': 0,
+        'h': 1,
+        's': 2,
+    },
+    'self-connect-mode': {
+        '0': b' ',
+        '1': b'e',
+        '2': b'E',
+        '3': b'a',
+        '4': b'A',
+    }
 }
 DEFAULT_PRESET = '(default)'
 
@@ -37,22 +60,22 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
     settings = {}
 
     if 'Settings' in config:
-        for name in config['Settings']:
+        for name in sorted(config['Settings']):
             try:
-                preset_name, setting = name.split('\\', 1)
+                preset_name, param = name.split('\\', 1)
             except ValueError:
                 # The default (nameless) preset was saved.
                 # It uses settings keys without a preset name prefix.
-                setting = name
+                param = name
                 preset_name = DEFAULT_PRESET
 
             preset_names.add(preset_name)
-            setting = setting.lower()
+            param = param.lower()
             value = config.get('Settings', name)
-            setting = PARAM_MAPPING.get(setting, setting)
+            param = PARAM_MAPPING.get(param, param)
 
-            if isinstance(setting, tuple):
-                component, setting = setting
+            if isinstance(param, tuple):
+                component, param = param
             else:
                 component = 'driver'
 
@@ -62,19 +85,25 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
             if component not in settings[preset_name]:
                 settings[preset_name][component] = {}
 
-            if value == 'false':
-                value = False
-            elif value == 'true':
-                value = True
-            elif value == '':
-                value = None
-            else:
-                try:
-                    value = int(value)
-                except (TypeError, ValueError):
-                    pass
+            if not isinstance(param, (tuple, list)):
+                param = (param,)
 
-            settings[preset_name][component][setting] = value
+            for p in param:
+                if p in VALUE_MAPPING:
+                    value = VALUE_MAPPING[p].get(value, value)
+                if value == 'false':
+                    value = False
+                elif value == 'true':
+                    value = True
+                elif value == '':
+                    value = None
+                else:
+                    try:
+                        value = int(value)
+                    except (TypeError, ValueError):
+                        pass
+
+                settings[preset_name][component][p] = value
 
     if (ignore_default and DEFAULT_PRESET in settings and len(settings) > 1):
         del settings[DEFAULT_PRESET]
