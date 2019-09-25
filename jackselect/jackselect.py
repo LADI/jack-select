@@ -344,8 +344,13 @@ def main(args=None):
             client.OpenMenu()
     except dbus.DBusException as exc:
         log.debug("Exception: %s", exc)
-        JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor,
-                      ignore_default=args.ignore_default)
+        app = JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor,
+                             ignore_default=args.ignore_default)
+
+        if args.preset:
+            # load preset when mainloop starts
+            GObject.timeout_add(0, lambda: app.activate_preset(preset=args.preset))
+
         try:
             return Gtk.main()
         except KeyboardInterrupt:
