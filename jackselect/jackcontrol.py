@@ -2,13 +2,13 @@
 """Control and configure a JACK server via DBus."""
 
 import logging
-
 from functools import partial
 
 import dbus
 
 
 log = logging.getLogger(__name__)
+
 SETTINGS = {
     'engine': (
         ('client-timeout', dbus.Int32),
