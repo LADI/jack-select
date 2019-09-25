@@ -74,9 +74,12 @@ methods.
 When **jack-select** starts up, it first checks whether there is already an
 existing application providing the **jack-select** DBus service. If yes, when
 called with no command argument arguments, it tells the running **jack-select**
-instance to open its menu. If a preset name is given as the first command line
-argument, it tells the running **jack-select** instance to activate this
-preset. An invalid preset name is silently ignored.
+instance to open its menu.
+
+If a preset name is passed as the first positional command-line argument the
+preset is activated immediately at application startup. If another instance of
+**jack-select** is already running, **jack-select** will tell the existing
+instance to activate the preset. An invalid preset name is silently ignored.
 
 For details about the DBus interface, please use DBus introspection facilities
 to examine the `de.chrisarndt.JackSelectService` service on the session bus.
