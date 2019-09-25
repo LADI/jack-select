@@ -53,10 +53,10 @@ When jack-select starts up, it first checks whether there is already a running
 instance of jack-select. If so, when called with no command argument arguments,
 it tells the existing jack-select instance to open its menu.
 
-If a preset name is passed as the first positional command-line argument and
-another instance of jack-select is already running, jack-select will tell the
-existing instance to activate the preset. An invalid preset name is silently
-ignored.
+If a preset name is passed as the first positional command-line argument the
+preset is activated immediately at application startup. If another instance of
+jack-select is already running, jack-select will tell the existing instance to
+activate the preset. An invalid preset name is silently ignored.
 
 
 PRESETS
@@ -68,14 +68,14 @@ parses the file on startup and then checks it at a regular interval. If the
 file is created, changed or deleted, jack-select will update its menu
 accordingly.
 
-To create or edit presets, the program **QjackCtl** must be used. Make the
+To create or edit presets, the program **QjackCtl** can be used. Make the
 desired changes in its configuration dialog and close it with "Ok" so the
 changes are saved. The changes will be reflected in the jack-select menu
 immediately.
 
 QjackCtl stores a nameless preset referred to with the label *(default)* in its
-interface. Since there is no way to remove thsi preset form QjackCtl's
-interface, jack-select can optionally ignore this preset, if it is not the only
+interface. Since there is no way to remove this preset from QjackCtl's
+interface, jack-select can optionally ignore this preset, unless it is the only
 preset found in the configuration (see **OPTIONS** section).
 
 
@@ -91,17 +91,22 @@ disabled via a command line option (see **OPTIONS** section).
 OPTIONS
 =======
 
+usage: jack-select [-h] [--version] [-a] [-c PATH] [-d] [-i] [-v] [preset]
+
 positional arguments:
-  preset                JACK configuration preset to activate on startup.
+  preset                Configuration preset to activate on startup.
 
 optional arguments:
   -h, --help            show this help message and exit
   --version             Show program version and exit.
   -a, --no-alsa-monitor
                         Disable ALSA device monitoring and filtering.
+  -c PATH, --config PATH
+                        Path to configuration file (default:
+                        <XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf)
   -d, --default         Activate default preset.
   -i, --ignore-default  Ignore the nameless '(default)' preset if any other
-                        presets are stored in the QjackCtl configuration.
+                        presets are stored in the configuration.
   -v, --verbose         Be verbose about what the script does.
 
 
@@ -109,8 +114,9 @@ FILES
 =====
 
 ``<XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf``
-    This file contains QjackCtl's configuration settings and the JACK
-    configuration presets jack-select uses.
+    The default path to QjackCtl's configuration file. This file contains the
+    JACK settings and configuration presets jack-select uses. The path can be
+    changed via a command line option.
 
 
 ENVIRONMENT
