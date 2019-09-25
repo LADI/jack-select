@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""A systray app to set the JACK configuration from QjackCtl presets via DBus.
-"""
+"""A systray app to set the JACK configuration from QjackCtl presets via DBus."""
 
 import argparse
 import logging
@@ -30,12 +29,13 @@ log = logging.getLogger('jack-select')
 INTERVAL_GET_STATS = 500
 INTERVAL_CHECK_CONF = 1000
 INTERVAL_RESTART = 1000
+DEFAULT_CONFIG = 'rncbc.org/QjackCtl.conf'
 
 
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self, bus=None, monitor_devices=True, ignore_default=False):
+    def __init__(self, bus=None, config=None, monitor_devices=True, ignore_default=False):
         if bus is None:
             bus = dbus.SessionBus()
 
@@ -56,6 +56,8 @@ class JackSelectApp:
             self.alsainfo = None
 
         # load QjackCtl presets
+        self.config = config
+
         self.presets = None
         self.active_preset = None
         self.load_presets()
@@ -75,15 +77,17 @@ class JackSelectApp:
             self.alsadevmonitor.start()
 
     def load_presets(self, force=False):
-        qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
+        if self.config in (None, DEFAULT_CONFIG):
+            qjackctl_conf = xdgbase.load_first_config(DEFAULT_CONFIG)
+        else:
+            qjackctl_conf = self.config if os.access(self.config, os.R_OK) else None
 
         if qjackctl_conf:
             mtime = os.path.getmtime(qjackctl_conf)
             changed = mtime > getattr(self, '_conf_mtime', 0)
 
             if changed:
-                log.debug("QjackCtl configuration file mtime changed "
-                          "or previously unknown.")
+                log.debug("Configuration file mtime changed or previously unknown.")
 
             if force or changed or self.presets is None:
                 log.debug("(Re-)Reading configuration.")
@@ -98,7 +102,7 @@ class JackSelectApp:
 
             self._conf_mtime = mtime
         elif self.presets or self.presets is None:
-            log.warning("QjackCtl configuration file not found.")
+            log.warning("Could not access configuration file.")
 
             if __debug__ and self.presets:
                 log.debug("Removing stored presets from memory.")
@@ -305,20 +309,36 @@ def main(args=None):
     from dbus.mainloop.glib import DBusGMainLoop
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument('--version', action="version",
-                    version="%%(prog)s %s" % __version__,
-                    help="Show program version and exit.")
-    ap.add_argument('-a', '--no-alsa-monitor', action="store_true",
-                    help="Disable ALSA device monitoring and filtering.")
-    ap.add_argument('-d', '--default', action="store_true",
-                    help="Activate default preset.")
-    ap.add_argument('-i', '--ignore-default', action="store_true",
-                    help="Ignore the nameless '(default)' preset if any other "
-                         "presets are stored in the QjackCtl configuration.")
-    ap.add_argument('-v', '--verbose', action="store_true",
-                    help="Be verbose about what the script does.")
-    ap.add_argument('preset', nargs='?',
-                    help="JACK configuration preset to activate on startup.")
+    ap.add_argument(
+        '--version',
+        action="version",
+        version="%%(prog)s %s" % __version__,
+        help="Show program version and exit.")
+    ap.add_argument(
+        '-a', '--no-alsa-monitor',
+        action="store_true",
+        help="Disable ALSA device monitoring and filtering.")
+    ap.add_argument(
+        '-c', '--config',
+        metavar='PATH',
+        help="Path to configuration file (default: <XDG_CONFIG_HOME>/%s)" % DEFAULT_CONFIG)
+    ap.add_argument(
+        '-d', '--default',
+        action="store_true",
+        help="Activate default preset.")
+    ap.add_argument(
+        '-i', '--ignore-default',
+        action="store_true",
+        help="Ignore the nameless '(default)' preset if any other presets are stored in the "
+             "configuration.")
+    ap.add_argument(
+        '-v', '--verbose',
+        action="store_true",
+        help="Be verbose about what the script does.")
+    ap.add_argument(
+        'preset',
+        nargs='?',
+        help="Configuration preset to activate on startup.")
 
     args = ap.parse_args(args if args is not None else sys.argv[1:])
 
@@ -344,8 +364,10 @@ def main(args=None):
             client.OpenMenu()
     except dbus.DBusException as exc:
         log.debug("Exception: %s", exc)
-        app = JackSelectApp(bus, monitor_devices=not args.no_alsa_monitor,
-                             ignore_default=args.ignore_default)
+        app = JackSelectApp(bus,
+                            config=args.config,
+                            monitor_devices=not args.no_alsa_monitor,
+                            ignore_default=args.ignore_default)
 
         if args.preset:
             # load preset when mainloop starts
