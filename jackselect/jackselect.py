@@ -11,157 +11,25 @@ os.environ['NO_AT_BRIDGE'] = "1"  # noqa
 import gi
 gi.require_version('Gtk', '3.0')  # noqa
 from gi.repository import Gtk, GObject
-from gi.repository.GdkPixbuf import Pixbuf
 
 import dbus
-import dbus.service
-
-from pkg_resources import resource_filename
 from xdg import BaseDirectory as xdgbase
 
 from .alsainfo import AlsaInfo
 from .devmonitor import AlsaDevMonitor
+from .indicator import Indicator
 from .jackcontrol import (JackCfgInterface, JackCtlInterface,
                           get_jack_controller)
+from .jackselect_service import DBUS_NAME, DBUS_INTERFACE, DBUS_PATH, JackSelectService
 from .qjackctlconf import get_qjackctl_presets
 from .version import __version__
 
 
 log = logging.getLogger('jack-select')
-DBUS_NAME = 'de.chrisarndt.JackSelectService'
-DBUS_PATH = '/de/chrisarndt/JackSelectApp'
-DBUS_INTERFACE = 'de.chrisarndt.JackSelectInterface'
+
 INTERVAL_GET_STATS = 500
 INTERVAL_CHECK_CONF = 1000
 INTERVAL_RESTART = 1000
-
-
-class Indicator:
-    """This class defines a standard GTK3 system tray indicator.
-
-    Class Indicator can be easily reused in any other project.
-
-    """
-    def __init__(self, icon, title=None):
-        """Create indicator icon and add menu.
-
-        Args:
-          icon (str): path to initial icon that will be shown on system panel
-
-        """
-        self._icon_cache = {}
-        self.icon = Gtk.StatusIcon.new_from_pixbuf(self._get_icon(icon))
-        self.menu = Gtk.Menu()
-        self.icon.connect('activate', self.on_popup_menu_open)
-        self.icon.connect('popup-menu', self.on_popup_menu_open)
-
-        if title:
-            self.icon.set_title(title)
-
-    def _get_icon(self, icon):
-        """Return icon from package as GdkPixbuf.Pixbuf.
-
-        Extracts the image from package to a file, stores it in the icon cache
-        if it's not in there yet and returns it. Otherwise just returns the
-        image stored in the cache.
-
-        """
-        if icon not in self._icon_cache:
-            filename = resource_filename(__name__, "images/%s" % icon)
-            self._icon_cache[icon] = Pixbuf.new_from_file(filename)
-
-        return self._icon_cache[icon]
-
-    def set_icon(self, icon):
-        """Set new icon in system tray.
-
-        Args:
-          icon (str): path to file with new icon
-
-        """
-        self.icon.set_from_pixbuf(self._get_icon(icon))
-
-    def add_menu_item(self, command=None, title=None, icon=None, data=None):
-        """Add mouse right click menu item.
-
-        Args:
-          command (callable): function that will be called after left mouse
-          click on title
-          title (str): label that will be shown in menu
-
-        """
-        if icon:
-            m_item = Gtk.ImageMenuItem(title)
-            image = Gtk.Image.new_from_pixbuf(self._get_icon(icon))
-            m_item.set_image(image)
-        else:
-            m_item = Gtk.MenuItem()
-            m_item.set_label(title)
-
-        if command:
-            m_item.connect('activate', command)
-
-        m_item.data = data
-        self.menu.append(m_item)
-        return m_item
-
-    def add_separator(self):
-        """Add separator between labels in the popup menu."""
-        m_item = Gtk.SeparatorMenuItem()
-        self.menu.append(m_item)
-        self.menu.show_all()
-
-    def on_popup_menu_open(self, widget=None, button=None, *args):
-        """Some action requested opening the popup menu."""
-        self.menu.popup(None, None, Gtk.StatusIcon.position_menu,
-                        widget or self.icon, button or 1,
-                        Gtk.get_current_event_time())
-
-    def on_popup_menu_close(self, widget=None, button=None, *args):
-        """Some action requested closing the popup menu."""
-        self.menu.popdown()
-
-
-class JackSelectService(dbus.service.Object):
-    def __init__(self, app, bus=None):
-        if bus is None:
-            bus = dbus.SessionBus()
-
-        # we need to keep a reference to the BusName
-        # otherwise it gets garbage-collected and the service vanishes
-        self.bus_name = dbus.service.BusName(DBUS_NAME, bus)
-        super().__init__(bus, DBUS_PATH)
-        self.app = app
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE, out_signature='i')
-    def GetPid(self):
-        log.debug("DBus client requested PID.")
-        return os.getpid()
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
-    def Exit(self):
-        log.debug("DBus client requested application exit.")
-        self.app.quit()
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
-    def OpenMenu(self):
-        log.debug("DBus client requested opening menu.")
-        self.app.gui.on_popup_menu_open()
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature='s')
-    def ActivatePreset(self, preset):
-        log.debug("DBus client requested activating preset '%s'." % preset)
-        self.app.activate_preset(preset=preset)
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
-    def ActivateDefaultPreset(self):
-        log.debug("DBus client requested activating default preset.")
-        self.app.activate_default_preset()
-
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE)
-    def StopJackServer(self):
-        log.debug("DBus client requested stopping JACK server.")
-        self.app.stop_jack_server()
 
 
 class JackSelectApp:
@@ -174,8 +42,7 @@ class JackSelectApp:
         self.monitor_devices = monitor_devices
         self.ignore_default = ignore_default
         self.gui = Indicator('jack.png', "JACK-Select")
-        self.gui.icon.set_has_tooltip(True)
-        self.gui.icon.connect("query-tooltip", self.tooltip_query)
+        self.gui.set_tooltip(self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
         dbus_obj = get_jack_controller(bus)
@@ -271,7 +138,7 @@ class JackSelectApp:
 
     def create_menu(self):
         log.debug("Building menu.")
-        self.gui.menu = Gtk.Menu()
+        self.gui.clear_menu()
 
         if self.presets:
             if not self.alsainfo:
@@ -279,21 +146,19 @@ class JackSelectApp:
 
             callback = self.activate_preset
             for name, label in sorted(self.presets.items()):
-                item = self.gui.add_menu_item(callback, label, data=name)
+                disabled = self.alsainfo and not self.check_alsa_settings(name)
+                self.gui.add_menu_item(callback, label, active=not disabled, data=name)
 
-                if self.alsainfo and not self.check_alsa_settings(name):
-                    item.set_sensitive(False)
         else:
-            item = self.gui.add_menu_item(None, "No presets found")
-            item.set_sensitive(False)
+            self.gui.add_menu_item(None, "No presets found", active=False)
 
         self.gui.add_separator()
-        self.menu_stop = self.gui.add_menu_item(
-            self.stop_jack_server, "Stop JACK Server", icon='stop.png')
-        self.menu_stop.set_sensitive(bool(self.jack_status.get('is_started')))
+        self.menu_stop = self.gui.add_menu_item(self.stop_jack_server,
+                                                "Stop JACK Server",
+                                                icon='stop.png',
+                                                active=bool(self.jack_status.get('is_started')))
         self.gui.add_separator()
-        self.menu_quit = self.gui.add_menu_item(self.quit, "Quit",
-                                                icon='quit.png')
+        self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon='quit.png')
         self.gui.menu.show_all()
 
     def receive_jack_status(self, value, name=None):
