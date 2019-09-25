@@ -161,6 +161,9 @@ class JackSelectApp:
         self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon='quit.png')
         self.gui.menu.show_all()
 
+    def open_menu(self):
+        self.gui.on_popup_menu_open()
+
     def receive_jack_status(self, value, name=None):
         if name == 'is_started':
             if value != self.jack_status.get('is_started'):

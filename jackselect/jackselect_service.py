@@ -38,7 +38,7 @@ class JackSelectService(dbus.service.Object):
     @dbus.service.method(dbus_interface=DBUS_INTERFACE)
     def OpenMenu(self):
         log.debug("DBus client requested opening menu.")
-        self.app.gui.on_popup_menu_open()
+        self.app.open_menu()
 
     @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature='s')
     def ActivatePreset(self, preset):
