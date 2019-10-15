@@ -6,13 +6,14 @@ ChangeLog
 ------------------
 
 * Configuration file can be given via command line option (a5b9933).
-* When a preset name is given on the command line, activate it
-  also when jack-select was not already running (439cdf5).
+* When a preset name is given on the command line (or the ``-d`` option is
+  used), activate the (default) preset also when jack-select was not already
+  running (439cdf5, 73bd6fe).
 * Updated man page (a1c6596).
 * Major internal code restructuring (0f27755).
 * Map all JACK settings to a D-BUS type explicitly (8c158d89).
-* Support 'slave-driver' engine parameter (this is not present in
-  QjackCtl's configuration file, though) (2601189).
+* Support 'slave-driver' engine parameter (this is not present in QjackCtl's
+  configuration file, though) (2601189).
 
 
 1.3.1 (2019-09-25)
