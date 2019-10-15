@@ -369,8 +369,11 @@ def main(args=None):
                             monitor_devices=not args.no_alsa_monitor,
                             ignore_default=args.ignore_default)
 
-        if args.preset:
-            # load preset when mainloop starts
+        if args.default:
+            # load default preset when mainloop starts
+            GObject.timeout_add(0, app.activate_default_preset)
+        elif args.preset:
+            # load given preset when mainloop starts
             GObject.timeout_add(0, lambda: app.activate_preset(preset=args.preset))
 
         try:
