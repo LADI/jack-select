@@ -2,6 +2,12 @@ ChangeLog
 =========
 
 
+1.4.1 (2019-10-15)
+------------------
+
+* Add missing images to source distribution.
+
+
 1.4.0 (2019-10-15)
 ------------------
 
