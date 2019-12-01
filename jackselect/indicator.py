@@ -62,7 +62,7 @@ class Indicator:
         self.menu = Gtk.Menu()
 
     def add_menu_item(self, command=None, title=None, icon=None, active=True, is_check=False,
-                      data=None):
+                      menu=None, data=None):
         """Add mouse right click menu item.
 
         Args:
@@ -88,14 +88,26 @@ class Indicator:
 
         m_item.set_sensitive(active)
         m_item.data = data
-        self.menu.append(m_item)
+
+        if menu:
+            menu.append(m_item)
+        else:
+            self.menu.append(m_item)
+
         return m_item
+
+    def add_submenu(self, title):
+        """Add a sub menu popup menu."""
+        submenu = Gtk.Menu()
+        m_item = Gtk.MenuItem(title)
+        m_item.set_submenu(submenu)
+        self.menu.append(m_item)
+        return submenu
 
     def add_separator(self):
         """Add separator between labels in the popup menu."""
         m_item = Gtk.SeparatorMenuItem()
         self.menu.append(m_item)
-        self.menu.show_all()
 
     def on_popup_menu_open(self, widget=None, button=None, *args):
         """Some action requested opening the popup menu."""
