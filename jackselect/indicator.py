@@ -84,7 +84,7 @@ class Indicator:
             m_item = Gtk.MenuItem(title)
 
         if command:
-            m_item.connect('activate', command)
+            m_item.connect('toggled' if is_check else 'activate', command)
 
         m_item.set_sensitive(active)
         m_item.data = data
