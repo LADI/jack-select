@@ -71,7 +71,7 @@ class Indicator:
           title (str): label that will be shown in menu
           icon (str): name of icon stored in application package
           active (bool): whether the menu entry can be activated (default: True)
-          data (obj): arbitrary daat to associate with the menu entry
+          data (obj): arbitrary data to associate with the menu entry
 
         """
         if icon:

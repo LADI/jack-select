@@ -14,11 +14,11 @@ from gi.repository import Gtk, GObject
 import dbus
 from xdg import BaseDirectory as xdgbase
 
+from .a2jcontrol import A2JCtlInterface
 from .alsainfo import AlsaInfo
 from .devmonitor import AlsaDevMonitor
 from .indicator import Indicator
-from .jackcontrol import (JackCfgInterface, JackCtlInterface,
-                          get_jack_controller)
+from .jackcontrol import (JackCfgInterface, JackCtlInterface)
 from .jackselect_service import DBUS_NAME, DBUS_INTERFACE, DBUS_PATH, JackSelectService
 from .qjackctlconf import get_qjackctl_presets
 from .version import __version__
@@ -36,8 +36,10 @@ class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
     def __init__(self, bus=None, config=None, monitor_devices=True, ignore_default=False):
-        if bus is None:
-            bus = dbus.SessionBus()
+        self.bus = bus
+
+        if self.bus is None:
+            self.bus = dbus.SessionBus()
 
         self.monitor_devices = monitor_devices
         self.ignore_default = ignore_default
@@ -45,9 +47,11 @@ class JackSelectApp:
         self.gui.set_tooltip(self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
-        dbus_obj = get_jack_controller(bus)
-        self.jackctl = JackCtlInterface(dbus_obj)
-        self.jackcfg = JackCfgInterface(dbus_obj)
+        self.session_bus = dbus.SessionBus()
+        self.jackctl = JackCtlInterface(bus=self.bus)
+        self.jackcfg = JackCfgInterface(bus=self.bus)
+        # a2jmidi D-BUS service controller is created on-demand
+        self._a2jctl = None
 
         if monitor_devices:
             # get ALSA devices and their parameters
@@ -75,6 +79,19 @@ class JackSelectApp:
             # set up udev device monitor
             self.alsadevmonitor = AlsaDevMonitor(self.handle_device_change)
             self.alsadevmonitor.start()
+
+    @property
+    def a2jctl(self):
+        if self._a2jctl is None:
+            try:
+                self._a2jctl = A2JCtlInterface(bus=self.bus)
+            except dbus.DBusException as exc:
+                log.warning("Could not connect to a2jmidid D-BUS service.")
+                log.debug("D-Bus exception: %s", exc)
+            else:
+                self._a2jctl.add_signal_handler(self.handle_a2jctl_signal)
+
+        return self._a2jctl
 
     def load_presets(self, force=False):
         if self.config in (None, DEFAULT_CONFIG):
@@ -161,6 +178,15 @@ class JackSelectApp:
                                                 "Stop JACK Server",
                                                 icon='stop.png',
                                                 active=bool(self.jack_status.get('is_started')))
+
+        if self.a2jctl:
+            self.gui.add_separator()
+            self.menu_a2jbridge = self.gui.add_menu_item(self.start_stop_a2jbridge,
+                                                         "ALSA-MIDI Bridge",
+                                                         icon='midi.png')
+        else:
+            self.menu_a2jbridge = None
+
         self.gui.add_separator()
         self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon='quit.png')
         self.gui.menu.show_all()
@@ -169,19 +195,20 @@ class JackSelectApp:
         self.gui.on_popup_menu_open()
 
     def receive_jack_status(self, value, name=None):
-        if name == 'is_started':
-            if value != self.jack_status.get('is_started'):
-                if value:
-                    self.gui.set_icon('started.png')
-                    log.info("JACK server has started.")
-                    self.menu_stop.set_sensitive(True)
-                else:
-                    self.gui.set_icon('stopped.png')
-                    self.tooltext = "JACK server is stopped."
-                    log.info(self.tooltext)
-                    self.menu_stop.set_sensitive(False)
-
+        jack_started = self.jack_status.get('is_started')
         self.jack_status[name] = value
+
+        if name == 'is_started' and value != jack_started:
+            if value:
+                self.gui.set_icon('started.png')
+                log.info("JACK server has started.")
+            else:
+                self.gui.set_icon('stopped.png')
+                self.tooltext = "JACK server is stopped."
+                log.info(self.tooltext)
+
+            self.menu_stop.set_sensitive(value)
+            self.update_a2jbridge_status()
 
         if self.jack_status.get('is_started'):
             try:
@@ -200,6 +227,30 @@ class JackSelectApp:
                                   self.jack_status)
             except KeyError:
                 self.tooltext = "No status available."
+
+    def update_a2jbridge_status(self, status=None):
+        if self.menu_a2jbridge:
+            if not self.a2jctl:
+                # No a2jmidid service D-BUS interface
+                self.menu_a2jbridge.set_sensitive(False)
+                self.menu_a2jbridge.set_label("ALSA-MIDI Bridge not available")
+            elif self.jack_status.get('is_started'):
+                # JACK server started
+                if status is None:
+                    status = self.a2jctl.is_started()
+
+                if status:
+                    # bridge started
+                    self.menu_a2jbridge.set_label("Stop ALSA-MIDI Bridge")
+                else:
+                    # bridge stopped
+                    self.menu_a2jbridge.set_label("Start ALSA-MIDI Bridge")
+
+                self.menu_a2jbridge.set_sensitive(True)
+            else:
+                # JACK server started
+                self.menu_a2jbridge.set_label("ALSA-MIDI Bridge suspended")
+                self.menu_a2jbridge.set_sensitive(False)
 
     def handle_device_change(self, observer=None, device=None, init=False):
         if device:
@@ -223,6 +274,14 @@ class JackSelectApp:
             self.receive_jack_status(True, name='is_started')
         elif signal == 'ServerStopped':
             self.receive_jack_status(False, name='is_started')
+
+    def handle_a2jctl_signal(self, *args, signal=None, **kw):
+        if signal == 'bridge_started':
+            log.debug("a2jmidid bridge STARTED signal received.")
+            self.update_a2jbridge_status(True)
+        elif signal == 'bridge_stopped':
+            log.debug("a2jmidid bridge STOPPED signal received.")
+            self.update_a2jbridge_status(False)
 
     def get_jack_stats(self):
         if self.jackctl and self.jack_status.get('is_started'):
@@ -291,6 +350,25 @@ class JackSelectApp:
             except Exception as exc:
                 log.error("Could not stop JACK server: %s", exc)
 
+    def on_start_stop_a2jbridge(self, widget, *args):
+        self.start_stop_a2jbridge()
+
+    def start_stop_a2jbridge(self, start_stop=None):
+        if not self.a2jctl:
+            return
+
+        if start_stop is not None:
+            start_stop = not self.a2jctl.is_started()
+
+        if start_stop:
+            log.debug("Starting ALSA MIDI to JACK bridge...")
+            # XXX: Add menu entry to change this
+            self.a2jctl.set_hw_export(True)
+            self.a2jctl.start()
+        else:
+            log.debug("Stopping ALSA MIDI to JACK bridge...")
+            self.a2jctl.stop()
+
     def quit(self, *args):
         log.debug("Exiting main loop.")
         Gtk.main_quit()
@@ -348,6 +426,7 @@ def main(args=None):
     # the mainloop needs to be set before creating the session bus instance
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
+    start_gui = False
 
     try:
         client = get_dbus_client(bus)
@@ -363,7 +442,12 @@ def main(args=None):
             log.debug("Opening menu...")
             client.OpenMenu()
     except dbus.DBusException as exc:
-        log.debug("Exception: %s", exc)
+        if exc.get_dbus_name().endswith('ServiceUnknown'):
+            start_gui = True
+        else:
+            log.warning("Exception: %s", exc)
+
+    if start_gui:
         app = JackSelectApp(bus,
                             config=args.config,
                             monitor_devices=not args.no_alsa_monitor,

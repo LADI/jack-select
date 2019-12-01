@@ -2,9 +2,10 @@
 """Control and configure a JACK server via DBus."""
 
 import logging
-from functools import partial
 
 import dbus
+
+from .dbusinterface import DBUSBaseInterface
 
 
 log = logging.getLogger(__name__)
@@ -45,69 +46,40 @@ SETTINGS = {
 }
 
 
-def get_jack_controller(bus=None):
-    if not bus:
-        bus = dbus.SessionBus()
-    return bus.get_object("org.jackaudio.service", "/org/jackaudio/Controller")
-
-
-class JackBaseInterface:
-    def __init__(self, jackctl=None):
-        if not jackctl:
-            jackctl = get_jack_controller()
-
-        self._if = dbus.Interface(jackctl, self.interface)
-
-    def _async_handler(self, *args, **kw):
-        name = kw.get('name')
-        callback = kw.get('callback')
-
-        if args and isinstance(args[0], dbus.DBusException):
-            log.error("Async call failed name=%s: %s", name, args[0])
-            return
-
-        if callback:
-            callback(*args, name=name)
-
-    def call_async(self, meth, name, callback=None, *args):
-        if callback:
-            handler = partial(self._async_handler, callback=callback,
-                              name=name)
-            kw = dict(reply_handler=handler, error_handler=handler)
-        else:
-            kw = {}
-        return getattr(self._if, meth)(*args, **kw)
+class JackBaseInterface(DBUSBaseInterface):
+    service = "org.jackaudio.service"
+    object_path = "/org/jackaudio/Controller"
 
 
 class JackCtlInterface(JackBaseInterface):
     interface = "org.jackaudio.JackControl"
 
     def is_started(self, cb=None):
-        return self.call_async('IsStarted', 'is_started', cb)
+        return self.call_async('IsStarted', name='is_started', callback=cb)
 
     def is_realtime(self, cb=None):
-        return self.call_async('IsRealtime', 'is_realtime', cb)
+        return self.call_async('IsRealtime', name='is_realtime', callback=cb)
 
     def start_server(self, cb=None):
-        return self.call_async('StartServer', 'start_server', cb)
+        return self.call_async('StartServer', name='start_server', callback=cb)
 
     def stop_server(self, cb=None):
-        return self.call_async('StopServer', 'stop_server', cb)
+        return self.call_async('StopServer', name='stop_server', callback=cb)
 
     def get_latency(self, cb=None):
-        return self.call_async('GetLatency', 'latency', cb)
+        return self.call_async('GetLatency', name='latency', callback=cb)
 
     def get_load(self, cb=None):
-        return self.call_async('GetLoad', 'load', cb)
+        return self.call_async('GetLoad', name='load', callback=cb)
 
     def get_period(self, cb=None):
-        return self.call_async('GetBufferSize', 'period', cb)
+        return self.call_async('GetBufferSize', name='period', callback=cb)
 
     def get_sample_rate(self, cb=None):
-        return self.call_async('GetSampleRate', 'samplerate', cb)
+        return self.call_async('GetSampleRate', name='samplerate', callback=cb)
 
     def get_xruns(self, cb=None):
-        return self.call_async('GetXruns', 'xruns', cb)
+        return self.call_async('GetXruns', name='xruns', callback=cb)
 
     def add_signal_handler(self, handler, signal=None):
         return self._if.connect_to_signal(
