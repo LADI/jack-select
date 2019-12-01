@@ -181,7 +181,7 @@ class JackSelectApp:
 
         if self.a2jctl:
             self.gui.add_separator()
-            self.menu_a2jbridge = self.gui.add_menu_item(self.start_stop_a2jbridge,
+            self.menu_a2jbridge = self.gui.add_menu_item(self.on_start_stop_a2jbridge,
                                                          "ALSA-MIDI Bridge",
                                                          icon='midi.png')
         else:
@@ -357,7 +357,7 @@ class JackSelectApp:
         if not self.a2jctl:
             return
 
-        if start_stop is not None:
+        if start_stop is None:
             start_stop = not self.a2jctl.is_started()
 
         if start_stop:
