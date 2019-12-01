@@ -184,6 +184,9 @@ class JackSelectApp:
             self.menu_a2jbridge = self.gui.add_menu_item(self.on_start_stop_a2jbridge,
                                                          "ALSA-MIDI Bridge",
                                                          icon='midi.png')
+            self.menu_a2j_hw_export = self.gui.add_menu_item(self.on_a2jbridge_set_hw_export,
+                                                             "Export HW Ports",
+                                                             is_check=True)
         else:
             self.menu_a2jbridge = None
 
@@ -233,6 +236,7 @@ class JackSelectApp:
             if not self.a2jctl:
                 # No a2jmidid service D-BUS interface
                 self.menu_a2jbridge.set_sensitive(False)
+                self.menu_a2j_hw_export.set_sensitive(False)
                 self.menu_a2jbridge.set_label("ALSA-MIDI Bridge not available")
             elif self.jack_status.get('is_started'):
                 # JACK server started
@@ -242,15 +246,20 @@ class JackSelectApp:
                 if status:
                     # bridge started
                     self.menu_a2jbridge.set_label("Stop ALSA-MIDI Bridge")
+                    self.menu_a2j_hw_export.set_sensitive(False)
                 else:
                     # bridge stopped
                     self.menu_a2jbridge.set_label("Start ALSA-MIDI Bridge")
+                    self.menu_a2j_hw_export.set_sensitive(True)
 
                 self.menu_a2jbridge.set_sensitive(True)
             else:
-                # JACK server started
+                # JACK server stopped
                 self.menu_a2jbridge.set_label("ALSA-MIDI Bridge suspended")
                 self.menu_a2jbridge.set_sensitive(False)
+                self.menu_a2j_hw_export.set_sensitive(True)
+
+            self.menu_a2j_hw_export.set_active(self.a2jctl.get_hw_export())
 
     def handle_device_change(self, observer=None, device=None, init=False):
         if device:
@@ -350,7 +359,7 @@ class JackSelectApp:
             except Exception as exc:
                 log.error("Could not stop JACK server: %s", exc)
 
-    def on_start_stop_a2jbridge(self, widget, *args):
+    def on_start_stop_a2jbridge(self, *args):
         self.start_stop_a2jbridge()
 
     def start_stop_a2jbridge(self, start_stop=None):
@@ -362,12 +371,18 @@ class JackSelectApp:
 
         if start_stop:
             log.debug("Starting ALSA MIDI to JACK bridge...")
-            # XXX: Add menu entry to change this
-            self.a2jctl.set_hw_export(True)
             self.a2jctl.start()
         else:
             log.debug("Stopping ALSA MIDI to JACK bridge...")
             self.a2jctl.stop()
+
+    def on_a2jbridge_set_hw_export(self, widget, *args):
+        if not self.a2jctl:
+            return
+
+        active = widget.get_active()
+        log.debug("Exporting HW ports via aj2midid %sabled.", "en" if active else "dis")
+        self.a2jctl.set_hw_export(active)
 
     def quit(self, *args):
         log.debug("Exiting main loop.")

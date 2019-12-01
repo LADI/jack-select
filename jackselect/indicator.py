@@ -61,7 +61,7 @@ class Indicator:
         """Clear all entries from the main menu."""
         self.menu = Gtk.Menu()
 
-    def add_menu_item(self, command=None, title=None, icon=None, active=True,
+    def add_menu_item(self, command=None, title=None, icon=None, active=True, is_check=False,
                       data=None):
         """Add mouse right click menu item.
 
@@ -78,9 +78,10 @@ class Indicator:
             m_item = Gtk.ImageMenuItem(title)
             image = Gtk.Image.new_from_pixbuf(self._get_icon(icon))
             m_item.set_image(image)
+        elif is_check:
+            m_item = Gtk.CheckMenuItem(title)
         else:
-            m_item = Gtk.MenuItem()
-            m_item.set_label(title)
+            m_item = Gtk.MenuItem(title)
 
         if command:
             m_item.connect('activate', command)
