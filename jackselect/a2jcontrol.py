@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Control and configure a aj2midid service via DBus."""
+"""Control and configure a aj2midid service via D-BUS."""
 
 import logging
-
-import dbus
 
 from .dbusinterface import DBUSBaseInterface
 

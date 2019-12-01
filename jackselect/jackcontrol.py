@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Control and configure a JACK server via DBus."""
+"""Control and configure a JACK server via D-BUS."""
 
 import logging
 
