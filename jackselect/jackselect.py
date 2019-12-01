@@ -381,8 +381,10 @@ class JackSelectApp:
             return
 
         active = widget.get_active()
-        log.debug("Exporting HW ports via aj2midid %sabled.", "en" if active else "dis")
-        self.a2jctl.set_hw_export(active)
+
+        if active != self.a2jctl.get_hw_export() and not self.a2jctl.is_started():
+            log.debug("Exporting HW ports via aj2midid %sabled.", "en" if active else "dis")
+            self.a2jctl.set_hw_export(active)
 
     def quit(self, *args):
         log.debug("Exiting main loop.")
