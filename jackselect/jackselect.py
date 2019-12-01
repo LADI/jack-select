@@ -196,6 +196,7 @@ class JackSelectApp:
         self.gui.add_separator()
         self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon='quit.png')
         self.gui.menu.show_all()
+        self.update_a2jbridge_status()
 
     def open_menu(self):
         self.gui.on_popup_menu_open()
