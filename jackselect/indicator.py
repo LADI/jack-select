@@ -61,8 +61,8 @@ class Indicator:
         """Clear all entries from the main menu."""
         self.menu = Gtk.Menu()
 
-    def add_menu_item(self, command=None, title=None, icon=None, active=True, is_check=False,
-                      menu=None, data=None):
+    def add_menu_item(self, command=None, title=None, icon=None, enabled=True, is_check=False,
+                      active=False, menu=None, data=None):
         """Add mouse right click menu item.
 
         Args:
@@ -80,13 +80,14 @@ class Indicator:
             m_item.set_image(image)
         elif is_check:
             m_item = Gtk.CheckMenuItem(title)
+            m_item.set_active(active)
         else:
             m_item = Gtk.MenuItem(title)
 
         if command:
             m_item.connect('toggled' if is_check else 'activate', command)
 
-        m_item.set_sensitive(active)
+        m_item.set_sensitive(enabled)
         m_item.data = data
 
         if menu:
