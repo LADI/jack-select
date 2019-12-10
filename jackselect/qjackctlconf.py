@@ -7,16 +7,9 @@ import logging
 
 log = logging.getLogger(__name__)
 PARAM_MAPPING = {
-    'driver': ('engine', 'driver'),
-    'realtime': ('engine', 'realtime'),
-    'priority': ('engine', 'realtime-priority'),
-    'verbose': ('engine', 'verbose'),
-    'timeout': ('engine', 'client-timeout'),
-    'portmax': ('engine', 'port-max'),
-    'servername': ('engine', 'name'),
-    'slavedrivers': ('engine', 'slave-drivers'),
     'chan': ('driver', ('inchannels', 'outchannels')),
     'clocksource': 'clock-source',
+    'driver': ('engine', 'driver'),
     'frames': 'period',
     'indevice': 'capture',
     'inlatency': 'input-latency',
@@ -25,21 +18,28 @@ PARAM_MAPPING = {
     'outdevice': 'playback',
     'outlatency': 'output-latency',
     'periods': 'nperiods',
+    'portmax': ('engine', 'port-max'),
+    'priority': ('engine', 'realtime-priority'),
+    'realtime': ('engine', 'realtime'),
     'samplerate': 'rate',
     'selfconnectmode': 'self-connect-mode',
+    'servername': ('engine', 'name'),
+    'slavedrivers': ('engine', 'slave-drivers'),
+    'timeout': ('engine', 'client-timeout'),
+    'verbose': ('engine', 'verbose'),
     # 'snoop': '???'
 }
 VALUE_MAPPING = {
+    'clock-source': {
+        'c': 0,
+        'h': 1,
+        's': 2,
+    },
     'dither': {
         '0': b'n',
         '1': b'r',
         '2': b's',
         '3': b't',
-    },
-    'clock-source': {
-        'c': 0,
-        'h': 1,
-        's': 2,
     },
     'self-connect-mode': {
         '0': b' ',
