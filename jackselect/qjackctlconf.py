@@ -137,10 +137,20 @@ def _test():
     qjackctl_conf = xdgbase.load_first_config('rncbc.org/QjackCtl.conf')
 
     if qjackctl_conf:
-        presets, _, default = get_qjackctl_presets(qjackctl_conf, True)
+        presets, settings, default = get_qjackctl_presets(qjackctl_conf, True)
         for preset in sorted(presets):
-            print(preset, "*" if preset == default else '')
+            print("%s:%s\n" % (preset, " *" if preset == default else ''))
+            print("[engine]")
 
+            for setting, value in sorted(settings[preset]['engine'].items()):
+                print("%s: %r" % (setting, value))
+
+            print("\n[driver]")
+
+            for setting, value in sorted(settings[preset]['driver'].items()):
+                print("%s: %r" % (setting, value))
+
+            print()
 
 if __name__ == '__main__':
     _test()
