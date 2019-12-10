@@ -49,6 +49,12 @@ VALUE_MAPPING = {
         '4': b'A',
     }
 }
+ALLOWED_VALUES = {
+    'clock-source': VALUE_MAPPING['clock-source'].values(),
+    'dither': VALUE_MAPPING['dither'].values(),
+    'midi-driver': ('none', 'seq', 'raw'),
+    'self-connect-mode': VALUE_MAPPING['self-connect-mode'].values(),
+}
 DEFAULT_PRESET = '(default)'
 
 
@@ -96,6 +102,8 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
                     value = False
                 elif value == 'true':
                     value = True
+                elif p in ALLOWED_VALUES and value not in ALLOWED_VALUES[p]:
+                    value = None
                 elif value == '':
                     value = None
                 else:
