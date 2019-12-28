@@ -471,7 +471,7 @@ def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
 
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog='jack-select', description=__doc__.splitlines()[0])
     ap.add_argument(
         '--version',
         action="version",
