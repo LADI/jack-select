@@ -7,9 +7,9 @@ show a systray icon with a pop-up menu to set JACK configuration from presets
 -----------------------------------------------------------------------------
 
 :Author: Christopher Arndt <chris@chrisarndt.de>
-:Date: 2019-10-15
+:Date: 2019-12-28
 :Copyright: The MIT License (MIT)
-:Version: 1.4.0
+:Version: 1.4.1
 :Manual section: 1
 :Manual group: audio
 
@@ -17,7 +17,7 @@ show a systray icon with a pop-up menu to set JACK configuration from presets
 SYNOPSIS
 ========
 
-jack-select [-h] [--version] [-a] [-d] [-i] [-v] [preset]
+jack-select [-h] [--version] [-a] [-c PATH] [-d] [-i] [-v] [preset]
 
 
 DESCRIPTION
@@ -36,6 +36,9 @@ mouse clicks.
 When the mouse pointer hovers over the systray icon and JACK is running, a
 tooltip will show the name of the active preset (if known), the most important
 parameters of the current configuration and some JACK server statistics.
+
+The entries in the "ALSA-MIDI-Bridge" sub-menu allow to configure and start and
+stop the *a2jmidi* service.
 
 Lastly, there are menu entries to stop the JACK server and to quit the
 application.
@@ -93,6 +96,8 @@ OPTIONS
 
 usage: jack-select [-h] [--version] [-a] [-c PATH] [-d] [-i] [-v] [preset]
 
+A systray app to set the JACK configuration from QjackCtl presets via DBus.
+
 positional arguments:
   preset                Configuration preset to activate on startup.
 
@@ -102,8 +107,8 @@ optional arguments:
   -a, --no-alsa-monitor
                         Disable ALSA device monitoring and filtering.
   -c PATH, --config PATH
-                        Path to configuration file (default:
-                        <XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf)
+                        Path to configuration file
+                        (default: <XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf)
   -d, --default         Activate default preset.
   -i, --ignore-default  Ignore the nameless '(default)' preset if any other
                         presets are stored in the configuration.
@@ -117,6 +122,8 @@ FILES
     The default path to QjackCtl's configuration file. This file contains the
     JACK settings and configuration presets jack-select uses. The path can be
     changed via a command line option.
+``<XDG_CONFIG_HOME>/jack-select/settings.ini``
+    This file stores jack-select-specific settings.
 
 
 ENVIRONMENT
@@ -124,8 +131,8 @@ ENVIRONMENT
 
 ``XDG_CONFIG_HOME``
     Specifies the root of the user's configuration directory tree, under which
-    jack-select will look for QjackCtl's configuration file (see FILES
-    section).
+    jack-select will look for QjackCtl's configuration file and its own
+    settings (see FILES section).
 
 
 SEE ALSO
