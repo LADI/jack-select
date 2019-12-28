@@ -8,16 +8,13 @@ PYTHON ?= python3
 TWINE ?= twine
 PYVER = $(shell $(PYTHON) -c 'import sys;print("%s.%s" % sys.version_info[:2])')
 
-GENERATED_FILES = README.rst $(PROJECT).1
+GENERATED_FILES = $(PROJECT).1
 
 .PHONY: all build flake8 install install-user uninstall
 
 all:
 	@echo 'make install: install jack-select to $(PREFIX) (needs root)'
 	@echo 'make install-user: install jack-select as current user to $(HOME)/.local'
-
-README.rst: README.md
-	pandoc -f markdown -t rst $< > $@
 
 $(PROJECT).1: $(PROJECT).1.rst
 	rst2man $< > $@

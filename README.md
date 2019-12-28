@@ -153,9 +153,7 @@ They come with their own dependencies, which are not listed here.
 
 If you want to install **jack-select** from a Git repository clone, you'll also
 need the Python [docutils](http://docutils.sourceforge.net) to build the man
-page from the ReST source. If you want to create the ReST version of the README
-from the Markdown source, you'll also need [pandoc](http://pandoc.org/) (only
-neccessary when you want to create a source distribution archive).
+page from the ReST source.
 
 
 [JACK]: http://jackaudio.org/
