@@ -10,7 +10,7 @@ PYVER = $(shell $(PYTHON) -c 'import sys;print("%s.%s" % sys.version_info[:2])')
 
 GENERATED_FILES = README.rst $(PROJECT).1
 
-.PHONY: all install install-user
+.PHONY: all build flake8 install install-user uninstall
 
 all:
 	@echo 'make install: install jack-select to $(PREFIX) (needs root)'
@@ -25,16 +25,19 @@ $(PROJECT).1: $(PROJECT).1.rst
 flake8:
 	flake8 $(PACKAGE)
 
-install: $(PROJECT).1
-	$(PYTHON) setup.py install --root=$(DESTDIR) --prefix=$(PREFIX) --optimize=1
+build:
+	$(PYTHON) setup.py build
+
+install: $(PROJECT).1 build
+	$(PYTHON) setup.py install --skip-build --root=$(DESTDIR) --prefix=$(PREFIX) --optimize=1
 	$(INSTALL) -Dm644 $(PROJECT).png -t $(DESTDIR:/=)$(PREFIX)/share/icons/hicolor/48x48/apps
 	$(INSTALL) -Dm644 $(PROJECT).desktop -t $(DESTDIR:/=)$(PREFIX)/share/applications
 	$(INSTALL) -Dm644 $(PROJECT).1 -t $(DESTDIR:/=)$(PREFIX)/share/man/man1
 	-update-desktop-database -q
 	-gtk-update-icon-cache -q $(DESTDIR:/=)$(PREFIX)/share/icons/hicolor
 
-install-user:
-	$(PYTHON) setup.py install --user
+install-user: build
+	$(PYTHON) setup.py install --skip-build --optimize=1 --user
 	$(INSTALL) -Dm644 $(PROJECT).png -t $(HOME)/.local/share/icons/hicolor/48x48/apps
 	$(INSTALL) -Dm644 $(PROJECT).desktop -t $(HOME)/.local/share/applications/
 
