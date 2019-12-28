@@ -37,7 +37,7 @@ When the mouse pointer hovers over the systray icon and JACK is running, a
 tooltip will show the name of the active preset (if known), the most important
 parameters of the current configuration and some JACK server statistics.
 
-The entries in the "ALSA-MIDI-Bridge" sub-menu allow to configure and start and
+The entries in the "ALSA-MIDI Bridge" sub-menu allow to configure and start and
 stop the *a2jmidi* service.
 
 Lastly, there are menu entries to stop the JACK server and to quit the

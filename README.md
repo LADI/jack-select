@@ -51,6 +51,9 @@ most important parameters of the current setup and some server statistics.
 
 ![Server status tooltip](tooltip.png)
 
+The entries in the "ALSA-MIDI Bridge" sub-menu allow to configure and start and
+stop the *a2jmidi* service.
+
 Lastly, there are menu entries to stop the JACK server and to quit the
 application.
 
