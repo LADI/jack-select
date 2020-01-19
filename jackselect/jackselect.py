@@ -37,28 +37,35 @@ SETTINGS = ('jack-select', 'settings.ini')
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self, bus=None, config=None, monitor_devices=True, ignore_default=False):
-        self.bus = bus
+    def __init__(self, bus=None, config=None, alsa_monitor=None, a2j_autostart=None,
+                 a2j_export_hw=None, ignore_default=None):
+        self.bus = bus or dbus.SessionBus()
 
         # load jack-select application settings
         self.load_settings()
 
-        if self.bus is None:
-            self.bus = dbus.SessionBus()
+        if alsa_monitor is None:
+            self.alsa_monitor = self.app_settings.getboolean('general', 'alsa_monitor')
+        else:
+            self.alsa_monitor = alsa_monitor
 
-        self.monitor_devices = monitor_devices
-        self.ignore_default = ignore_default
+        if ignore_default is None:
+            self.ignore_default = self.app_settings.getboolean('general', 'ignore_default')
+        else:
+            self.ignore_default = ignore_default
+
         self.gui = Indicator('jack.png', "JACK-Select")
         self.gui.set_tooltip(self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
-        self.session_bus = dbus.SessionBus()
         self.jackctl = JackCtlInterface(bus=self.bus)
         self.jackcfg = JackCfgInterface(bus=self.bus)
         # a2jmidi D-BUS service controller is created on-demand
         self._a2jctl = None
+        self._a2j_autostart = a2j_autostart
+        self._a2j_export_hw = a2j_export_hw
 
-        if monitor_devices:
+        if self.alsa_monitor:
             # get ALSA devices and their parameters
             self.handle_device_change(init=True)
         else:
@@ -80,7 +87,7 @@ class JackSelectApp:
         # add & start DBUS service
         self.dbus_service = JackSelectService(self, bus)
 
-        if monitor_devices:
+        if self.alsa_monitor:
             # set up udev device monitor
             self.alsadevmonitor = AlsaDevMonitor(self.handle_device_change)
             self.alsadevmonitor.start()
@@ -100,30 +107,36 @@ class JackSelectApp:
 
     @property
     def a2j_autostart(self):
-        return self.app_settings.getboolean('a2jmidi', 'autostart')
+        return (self.app_settings.getboolean('a2jmidi', 'autostart')
+                if self._a2j_autostart is None else self._a2j_autostart)
 
     @a2j_autostart.setter
     def a2j_autostart(self, flag):
-        if flag != self.a2j_autostart:
+        if flag != self.app_settings.getboolean('a2jmidi', 'autostart'):
             self.app_settings.set('a2jmidi', 'autostart', 'yes' if flag else 'no')
             self.write_settings()
 
     @property
     def a2j_export_hw(self):
-        return self.app_settings.getboolean('a2jmidi', 'export_hw')
+        return (self.app_settings.getboolean('a2jmidi', 'export_hw')
+                if self._a2j_export_hw is None else self._a2j_export_hw)
 
     @a2j_export_hw.setter
     def a2j_export_hw(self, flag):
-        if flag != self.a2j_export_hw:
+        if flag != self.app_settings.getboolean('a2jmidi', 'export_hw'):
             self.app_settings.set('a2jmidi', 'export_hw', 'yes' if flag else 'no')
             self.write_settings()
 
     def load_settings(self):
         self.app_settings = configparser.ConfigParser()
         self.app_settings.read_dict({
+            'general': {
+                'alsa_monitor': 'yes',
+                'ignore_default': 'no',
+            },
             'a2jmidi': {
-                'export_hw': 'yes',
                 'autostart': 'no',
+                'export_hw': 'yes',
             }
         })
 
@@ -478,8 +491,19 @@ def main(args=None):
         version="%%(prog)s %s" % __version__,
         help="Show program version and exit.")
     ap.add_argument(
-        '-a', '--no-alsa-monitor',
+        '--a2j-autostart',
         action="store_true",
+        default=None,
+        help="Autostart ALSA-MIDI to JACK bridge with JACK.")
+    ap.add_argument(
+        '--a2j-export-hw',
+        action="store_true",
+        default=None,
+        help="Export hardware MIDI ports via ALSA-MIDI to JACK bridge.")
+    ap.add_argument(
+        '-a', '--no-alsa-monitor',
+        action="store_false",
+        default=None,
         help="Disable ALSA device monitoring and filtering.")
     ap.add_argument(
         '-c', '--config',
@@ -492,6 +516,7 @@ def main(args=None):
     ap.add_argument(
         '-i', '--ignore-default',
         action="store_true",
+        default=None,
         help="Ignore the nameless '(default)' preset if any other presets are stored in the "
              "configuration.")
     ap.add_argument(
@@ -532,10 +557,14 @@ def main(args=None):
         else:
             log.warning("Exception: %s", exc)
 
+    log.debug("Args: %s", args)
+
     if start_gui:
         app = JackSelectApp(bus,
                             config=args.config,
-                            monitor_devices=not args.no_alsa_monitor,
+                            a2j_autostart=args.a2j_autostart,
+                            a2j_export_hw=args.a2j_export_hw,
+                            alsa_monitor=args.no_alsa_monitor,
                             ignore_default=args.ignore_default)
 
         if args.default:
