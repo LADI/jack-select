@@ -1,6 +1,16 @@
 ChangeLog
 =========
 
+1.5.0 (2020-01-19)
+------------------
+
+* Add sub-menu to systray menu to start and stop a2jmidid and control its
+  options and command line options for the latter as well.
+* Add application settings loading/saving.
+* Updated source code documentation, readme, man page and screenshots.
+* Added ``build`` and (POSIX only) ``uninstall`` targets to Makefile (fixes #5).
+* Removed Python 3.4 support, added 3.8.
+
 
 1.4.1 (2019-10-15)
 ------------------
