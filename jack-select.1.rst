@@ -7,9 +7,9 @@ show a systray icon with a pop-up menu to set JACK configuration from presets
 -----------------------------------------------------------------------------
 
 :Author: Christopher Arndt <chris@chrisarndt.de>
-:Date: 2019-12-28
+:Date: 2020-01-19
 :Copyright: The MIT License (MIT)
-:Version: 1.4.1
+:Version: 1.5.0
 :Manual section: 1
 :Manual group: audio
 
@@ -17,7 +17,7 @@ show a systray icon with a pop-up menu to set JACK configuration from presets
 SYNOPSIS
 ========
 
-jack-select [-h] [--version] [-a] [-c PATH] [-d] [-i] [-v] [preset]
+jack-select [-h] [--version] [--a2j-autostart] [--a2j-export-hw] [-a] [-c PATH] [-d] [-i] [-v] [preset]
 
 
 DESCRIPTION
@@ -91,6 +91,20 @@ currently unavailable, will be deactivated. ALSA device discovery can be
 disabled via a command line option (see **OPTIONS** section).
 
 
+ALSA-MIDI to JACK BRIDGE
+========================
+
+jack-select provides a sub-menu with entries to start and stop the a2jmidid
+ALSA-MIDI to JACK bridge via D-BUS and set related options.
+
+The bridge can be automatically started when activating a JACK preset and
+you can select whether the bridge also exports hardware MIDI ports as JACK
+MIDI ports.
+
+The selected options are automatically stored in jack-select's own settings
+file and can also be overwritten via commadn line options.
+
+
 OPTIONS
 =======
 
@@ -104,11 +118,13 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --version             Show program version and exit.
+  --a2j-autostart       Autostart ALSA-MIDI to JACK bridge with JACK.
+  --a2j-export-hw       Export hardware MIDI ports via ALSA-MIDI to JACK bridge.
   -a, --no-alsa-monitor
                         Disable ALSA device monitoring and filtering.
   -c PATH, --config PATH
                         Path to configuration file
-                        (default: <XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf)
+                        (default: ``<XDG_CONFIG_HOME>/rncbc.org/QjackCtl.conf``)
   -d, --default         Activate default preset.
   -i, --ignore-default  Ignore the nameless '(default)' preset if any other
                         presets are stored in the configuration.
