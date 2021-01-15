@@ -58,8 +58,7 @@ class JackSelectApp:
         self.gui.set_tooltip(self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
-        self.jackctl = JackCtlInterface(bus=self.bus)
-        self.jackcfg = JackCfgInterface(bus=self.bus)
+
         # a2jmidi D-BUS service controller is created on-demand
         self._a2jctl = None
         self._a2j_autostart = a2j_autostart
@@ -78,11 +77,13 @@ class JackSelectApp:
         self.active_preset = None
         self.load_presets()
 
+        # Create Jack control and config D-BUS interfaces
+        self.dbus_connect()
+
         # set up periodic functions to check presets & jack status
         GObject.timeout_add(INTERVAL_CHECK_CONF, self.load_presets)
         GObject.timeout_add(INTERVAL_GET_STATS, self.get_jack_stats)
         self.jackctl.is_started(self.update_jack_status)
-        self.jackctl.add_signal_handler(self.handle_jackctl_signal)
 
         # add & start DBUS service
         self.dbus_service = JackSelectService(self, bus)
@@ -91,6 +92,19 @@ class JackSelectApp:
             # set up udev device monitor
             self.alsadevmonitor = AlsaDevMonitor(self.handle_device_change)
             self.alsadevmonitor.start()
+
+    def dbus_connect(self):
+        """Create Jack control and config D-BUS interfaces."""
+        try:
+            log.debug("Connecting to JACK D-BUS interface...")
+            self.jackctl = JackCtlInterface(bus=self.bus)
+            self.jackcfg = JackCfgInterface(bus=self.bus)
+        except dbus.exceptions.DBusException as exc:
+            log.warning("Could not connect to JACK D-BUS interface: %s", exc)
+            return True
+        else:
+            log.debug("JACK D-BUS connection established.")
+            self.jackctl.add_signal_handler(self.handle_jackctl_signal)
 
     @property
     def a2jctl(self):
@@ -354,6 +368,7 @@ class JackSelectApp:
                 self.load_presets(force=True)
 
     def handle_jackctl_signal(self, *args, signal=None, **kw):
+        log.debug("JackCtl signal received: %r", signal)
         if signal == 'ServerStarted':
             self.update_jack_status(True, name='is_started')
         elif signal == 'ServerStopped':
@@ -367,15 +382,37 @@ class JackSelectApp:
             log.debug("a2jmidid bridge STOPPED signal received.")
             self.update_a2jbridge_status(False)
 
+    def handle_dbus_error(self, *args):
+        """Handle errors from async JackCtlInterface calls.
+
+        If the error indicates that the JackCtl D-BUS service vanished,
+        invalidate the existing D-BUS interface instances and schedule a
+        reconnection attempt.
+
+        """
+        log.warning("JackCtl D-BUS call error handler called.")
+        if args and isinstance(args[0], dbus.DBusException):
+            if 'org.freedesktop.DBus.Error.ServiceUnknown' in str(args[0]) and self.jackctl:
+                log.warning("JackCtl D-BUS service vanished. Assuming JACK is stopped.")
+                self.update_jack_status(False, name='is_started')
+                self.jackctl = None
+                self.jackcfg = None
+                GObject.timeout_add(INTERVAL_GET_STATS, self.dbus_connect)
+
     def get_jack_stats(self):
         if self.jackctl and self.jack_status.get('is_started'):
-            cb = self.update_jack_status
-            self.jackctl.is_realtime(cb)
-            self.jackctl.get_sample_rate(cb)
-            self.jackctl.get_period(cb)
-            self.jackctl.get_load(cb)
-            self.jackctl.get_xruns(cb)
-            self.jackctl.get_latency(cb)
+            try:
+                cb = self.update_jack_status
+                ecb = self.handle_dbus_error
+                self.jackctl.is_realtime(cb, ecb)
+                self.jackctl.get_sample_rate(cb, ecb)
+                self.jackctl.get_period(cb, ecb)
+                self.jackctl.get_load(cb, ecb)
+                self.jackctl.get_xruns(cb, ecb)
+                self.jackctl.get_latency(cb, ecb)
+            except dbus.exceptions.DBusException:
+                log.warning("JackCtl D-BUS service failure. Assuming JACK is stopped.")
+                self.update_jack_status(False, name='is_started')
 
         return True  # keep function scheduled
 
@@ -408,11 +445,12 @@ class JackSelectApp:
         settings = self.jack_settings.get(preset)
 
         if settings:
-            self.jackcfg.activate_preset(settings)
-            log.info("Activated preset: %s", preset)
-            self.stop_jack_server()
-            GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
-            self.active_preset = preset
+            if self.jackcfg:
+                self.jackcfg.activate_preset(settings)
+                log.info("Activated preset: %s", preset)
+                self.stop_jack_server()
+                GObject.timeout_add(INTERVAL_RESTART, self.start_jack_server)
+                self.active_preset = preset
         else:
             log.error("Unknown preset '%s'. Ignoring it.", preset)
 
