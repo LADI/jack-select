@@ -54,31 +54,43 @@ class JackBaseInterface(DBUSBaseInterface):
 class JackCtlInterface(JackBaseInterface):
     interface = "org.jackaudio.JackControl"
 
-    def is_started(self, cb=None):
-        return self.call_async('IsStarted', name='is_started', callback=cb)
+    def exit(self, cb=None, error_cb=None):
+        return self.call_async('Exit', name='is_started', callback=cb,
+                               error_callback=error_cb)
 
-    def is_realtime(self, cb=None):
-        return self.call_async('IsRealtime', name='is_realtime', callback=cb)
+    def is_started(self, cb=None, error_cb=None):
+        return self.call_async('IsStarted', name='is_started', callback=cb,
+                               error_callback=error_cb)
 
-    def start_server(self, cb=None):
-        return self.call_async('StartServer', name='start_server', callback=cb)
+    def is_realtime(self, cb=None, error_cb=None):
+        return self.call_async('IsRealtime', name='is_realtime', callback=cb,
+                               error_callback=error_cb)
 
-    def stop_server(self, cb=None):
-        return self.call_async('StopServer', name='stop_server', callback=cb)
+    def start_server(self, cb=None, error_cb=None):
+        return self.call_async('StartServer', name='start_server', callback=cb,
+                               error_callback=error_cb)
 
-    def get_latency(self, cb=None):
-        return self.call_async('GetLatency', name='latency', callback=cb)
+    def stop_server(self, cb=None, error_cb=None):
+        return self.call_async('StopServer', name='stop_server', callback=cb,
+                               error_callback=error_cb)
 
-    def get_load(self, cb=None):
-        return self.call_async('GetLoad', name='load', callback=cb)
+    def get_latency(self, cb=None, error_cb=None):
+        return self.call_async('GetLatency', name='latency', callback=cb,
+                               error_callback=error_cb)
 
-    def get_period(self, cb=None):
-        return self.call_async('GetBufferSize', name='period', callback=cb)
+    def get_load(self, cb=None, error_cb=None):
+        return self.call_async('GetLoad', name='load', callback=cb,
+                               error_callback=error_cb)
 
-    def get_sample_rate(self, cb=None):
-        return self.call_async('GetSampleRate', name='samplerate', callback=cb)
+    def get_period(self, cb=None, error_cb=None):
+        return self.call_async('GetBufferSize', name='period', callback=cb,
+                               error_callback=error_cb)
 
-    def get_xruns(self, cb=None):
+    def get_sample_rate(self, cb=None, error_cb=None):
+        return self.call_async('GetSampleRate', name='samplerate', callback=cb,
+                               error_callback=error_cb)
+
+    def get_xruns(self, cb=None, error_cb=None):
         return self.call_async('GetXruns', name='xruns', callback=cb)
 
     def add_signal_handler(self, handler, signal=None):
