@@ -1,6 +1,16 @@
 ChangeLog
 =========
 
+
+1.5.1 (2021-01-15)
+------------------
+
+* Gracefully handle when the JACK D-BUS service vanishes (e.g. caused by
+  running ``jack_control exit``) and re-connect on-demand.
+* Updated copyright year in readme, man page and license.
+* Removed Python 3.5 support, added 3.9.
+
+
 1.5.0 (2020-01-19)
 ------------------
 
