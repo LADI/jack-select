@@ -44,11 +44,12 @@ class DBUSBaseInterface:
         if callback:
             callback(*args, name=name)
 
-    def call_async(self, meth, args=None, name=None, callback=None):
+    def call_async(self, meth, args=None, name=None, callback=None,
+                   error_callback=None):
         if callback:
             handler = partial(self._async_handler, callback=callback,
                               name=name or meth)
-            kw = dict(reply_handler=handler, error_handler=handler)
+            kw = dict(reply_handler=handler, error_handler=error_callback or handler)
         else:
             kw = {}
 
