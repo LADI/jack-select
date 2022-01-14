@@ -36,17 +36,17 @@ VALUE_MAPPING = {
         's': 2,
     },
     'dither': {
-        '0': b'n',
-        '1': b'r',
-        '2': b's',
-        '3': b't',
+        0: b'n',
+        1: b'r',
+        2: b's',
+        3: b't',
     },
     'self-connect-mode': {
-        '0': b' ',
-        '1': b'e',
-        '2': b'E',
-        '3': b'a',
-        '4': b'A',
+        0: b' ',
+        1: b'e',
+        2: b'E',
+        3: b'a',
+        4: b'A',
     }
 }
 ALLOWED_VALUES = {
@@ -95,22 +95,33 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
             if not isinstance(param, (tuple, list)):
                 param = (param,)
 
+            if value == 'false':
+                value = False
+            elif value == 'true':
+                value = True
+            # Dirty way of stripping string quoting
+            # it's not clear when values get quoted in Qt settings files
+            elif (
+                len(value) >= 2 and
+                (
+                    (value.startswith("'") and value.endswith("'")) or
+                    (value.startswith('"') and value.endswith('"'))
+                )
+            ):
+                value = value[1:-1]
+            elif value == '':
+                value = None
+            else:
+                try:
+                    value = int(value)
+                except (TypeError, ValueError):
+                    pass
+
             for p in param:
                 if p in VALUE_MAPPING:
                     value = VALUE_MAPPING[p].get(value, value)
-                if value == 'false':
-                    value = False
-                elif value == 'true':
-                    value = True
                 elif p in ALLOWED_VALUES and value not in ALLOWED_VALUES[p]:
                     value = None
-                elif value == '':
-                    value = None
-                else:
-                    try:
-                        value = int(value)
-                    except (TypeError, ValueError):
-                        pass
 
                 settings[preset_name][component][p] = value
 
