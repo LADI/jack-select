@@ -2,6 +2,20 @@ ChangeLog
 =========
 
 
+1.5.2 (2022-01-17)
+------------------
+
+* Fixed: QjackCtl sometimes saves certain settings as quoted strings and
+  the QjackCtl.conf parsing of jack-select didn't handle that correctly,
+* Fixed: newer versions of QjackCtl use `0` as the default value for several
+  settngs, but setting these settings actually to zero will prevent proper
+  JACK operation. For these setting a value of `0` is now interpreted as
+  meaning "(re-)set to default value".
+* Updated copyright year in readme, man page and license.
+* Added classifier for Python 3.10 support.
+* Reformatted source code with black.
+
+
 1.5.1 (2021-01-15)
 ------------------
 
