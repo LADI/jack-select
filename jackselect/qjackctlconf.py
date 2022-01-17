@@ -55,6 +55,19 @@ ALLOWED_VALUES = {
     'midi-driver': ('none', 'seq', 'raw'),
     'self-connect-mode': VALUE_MAPPING['self-connect-mode'].values(),
 }
+NULL_DEFAULT_VALUES = (
+    'client-timeout',
+    'inchannels',
+    'input-latency',
+    'nperiods',
+    'outchannels',
+    'output-latency',
+    'period',
+    'port-max',
+    'rate',
+    'realtime-priority',
+    'wait'
+)
 DEFAULT_PRESET = '(default)'
 
 
@@ -121,6 +134,8 @@ def get_qjackctl_presets(qjackctl_conf, ignore_default=False):
                 if p in VALUE_MAPPING:
                     value = VALUE_MAPPING[p].get(value, value)
                 elif p in ALLOWED_VALUES and value not in ALLOWED_VALUES[p]:
+                    value = None
+                elif p in NULL_DEFAULT_VALUES and value == 0:
                     value = None
 
                 settings[preset_name][component][p] = value
