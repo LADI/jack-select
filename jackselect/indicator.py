@@ -3,7 +3,8 @@
 from pkg_resources import resource_filename
 
 import gi
-gi.require_version('Gtk', '3.0')  # noqa
+
+gi.require_version("Gtk", "3.0")  # noqa
 from gi.repository import Gtk
 from gi.repository.GdkPixbuf import Pixbuf
 
@@ -14,6 +15,7 @@ class Indicator:
     Class Indicator can be easily reused in any other project.
 
     """
+
     def __init__(self, icon, title=None):
         """Create indicator icon and add menu.
 
@@ -24,8 +26,8 @@ class Indicator:
         self._icon_cache = {}
         self.icon = Gtk.StatusIcon.new_from_pixbuf(self._get_icon(icon))
         self.menu = Gtk.Menu()
-        self.icon.connect('activate', self.on_popup_menu_open)
-        self.icon.connect('popup-menu', self.on_popup_menu_open)
+        self.icon.connect("activate", self.on_popup_menu_open)
+        self.icon.connect("popup-menu", self.on_popup_menu_open)
 
         if title:
             self.icon.set_title(title)
@@ -61,8 +63,17 @@ class Indicator:
         """Clear all entries from the main menu."""
         self.menu = Gtk.Menu()
 
-    def add_menu_item(self, command=None, title=None, icon=None, enabled=True, is_check=False,
-                      active=False, menu=None, data=None):
+    def add_menu_item(
+        self,
+        command=None,
+        title=None,
+        icon=None,
+        enabled=True,
+        is_check=False,
+        active=False,
+        menu=None,
+        data=None,
+    ):
         """Add mouse right click menu item.
 
         Args:
@@ -85,7 +96,7 @@ class Indicator:
             m_item = Gtk.MenuItem(title)
 
         if command:
-            m_item.connect('toggled' if is_check else 'activate', command)
+            m_item.connect("toggled" if is_check else "activate", command)
 
         m_item.set_sensitive(enabled)
         m_item.data = data
@@ -112,9 +123,14 @@ class Indicator:
 
     def on_popup_menu_open(self, widget=None, button=None, *args):
         """Some action requested opening the popup menu."""
-        self.menu.popup(None, None, Gtk.StatusIcon.position_menu,
-                        widget or self.icon, button or 1,
-                        Gtk.get_current_event_time())
+        self.menu.popup(
+            None,
+            None,
+            Gtk.StatusIcon.position_menu,
+            widget or self.icon,
+            button or 1,
+            Gtk.get_current_event_time(),
+        )
 
     def on_popup_menu_close(self, widget=None, button=None, *args):
         """Some action requested closing the popup menu."""

@@ -15,9 +15,9 @@ class AlsaDevMonitor:
         # set up udev device monitor
         context = Context()
         self._monitor = Monitor.from_netlink(context)
-        self._monitor.filter_by(subsystem='sound')
+        self._monitor.filter_by(subsystem="sound")
         self._observer = MonitorObserver(self._monitor)
-        self._observer.connect('device-event', callback)
+        self._observer.connect("device-event", callback)
 
     def start(self):
         log.debug("Starting AlsaDevMonitor...")

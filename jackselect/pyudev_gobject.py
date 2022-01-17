@@ -62,8 +62,11 @@ class MonitorObserver(GObject.GObject):
         # python versions.  We could also remove the "unicode_literals" import,
         # but I don't want to make exceptions to the standard set of future
         # imports used throughout pyudev for the sake of consistency.
-        str('device-event'): (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE,
-                              (GObject.TYPE_PYOBJECT,)),
+        str("device-event"): (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_PYOBJECT,),
+        ),
     }
 
     def __init__(self, monitor):
@@ -90,7 +93,8 @@ class MonitorObserver(GObject.GObject):
     def enabled(self, value):
         if value and self.event_source is None:
             self.event_source = GLib.io_add_watch(
-                self.monitor, GLib.IO_IN, self._process_udev_event)
+                self.monitor, GLib.IO_IN, self._process_udev_event
+            )
         elif not value and self.event_source is not None:
             GLib.source_remove(self.event_source)
             self.event_source = None
@@ -103,7 +107,7 @@ class MonitorObserver(GObject.GObject):
         return True
 
     def _emit_event(self, device):
-        self.emit('device-event', device)
+        self.emit("device-event", device)
 
 
 GObject.type_register(MonitorObserver)

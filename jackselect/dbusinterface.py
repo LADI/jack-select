@@ -34,8 +34,8 @@ class DBUSBaseInterface:
         return bus.get_object(self.service, self.object_path)
 
     def _async_handler(self, *args, **kw):
-        name = kw.get('name')
-        callback = kw.get('callback')
+        name = kw.get("name")
+        callback = kw.get("callback")
 
         if args and isinstance(args[0], dbus.DBusException):
             log.error("Async call failed name=%s: %s", name, args[0])
@@ -44,11 +44,9 @@ class DBUSBaseInterface:
         if callback:
             callback(*args, name=name)
 
-    def call_async(self, meth, args=None, name=None, callback=None,
-                   error_callback=None):
+    def call_async(self, meth, args=None, name=None, callback=None, error_callback=None):
         if callback:
-            handler = partial(self._async_handler, callback=callback,
-                              name=name or meth)
+            handler = partial(self._async_handler, callback=callback, name=name or meth)
             kw = dict(reply_handler=handler, error_handler=error_callback or handler)
         else:
             kw = {}
@@ -59,5 +57,6 @@ class DBUSBaseInterface:
         return self._if.connect_to_signal(
             signal_name=signal,
             handler_function=handler,
-            interface_keyword='interface',
-            member_keyword='signal')
+            interface_keyword="interface",
+            member_keyword="signal",
+        )

@@ -7,9 +7,10 @@ import logging
 import os
 import sys
 
-os.environ['NO_AT_BRIDGE'] = "1"  # noqa
+os.environ["NO_AT_BRIDGE"] = "1"  # noqa
 import gi
-gi.require_version('Gtk', '3.0')  # noqa
+
+gi.require_version("Gtk", "3.0")  # noqa
 from gi.repository import Gtk, GObject
 
 import dbus
@@ -19,42 +20,49 @@ from .a2jcontrol import A2JCtlInterface
 from .alsainfo import AlsaInfo
 from .devmonitor import AlsaDevMonitor
 from .indicator import Indicator
-from .jackcontrol import (JackCfgInterface, JackCtlInterface)
+from .jackcontrol import JackCfgInterface, JackCtlInterface
 from .jackselect_service import DBUS_NAME, DBUS_INTERFACE, DBUS_PATH, JackSelectService
 from .qjackctlconf import get_qjackctl_presets
 from .version import __version__
 
 
-log = logging.getLogger('jack-select')
+log = logging.getLogger("jack-select")
 
 INTERVAL_GET_STATS = 500
 INTERVAL_CHECK_CONF = 1000
 INTERVAL_RESTART = 1000
-DEFAULT_CONFIG = ('rncbc.org', 'QjackCtl.conf')
-SETTINGS = ('jack-select', 'settings.ini')
+DEFAULT_CONFIG = ("rncbc.org", "QjackCtl.conf")
+SETTINGS = ("jack-select", "settings.ini")
 
 
 class JackSelectApp:
     """A simple systray application to select a JACK configuration preset."""
 
-    def __init__(self, bus=None, config=None, alsa_monitor=None, a2j_autostart=None,
-                 a2j_export_hw=None, ignore_default=None):
+    def __init__(
+        self,
+        bus=None,
+        config=None,
+        alsa_monitor=None,
+        a2j_autostart=None,
+        a2j_export_hw=None,
+        ignore_default=None,
+    ):
         self.bus = bus or dbus.SessionBus()
 
         # load jack-select application settings
         self.load_settings()
 
         if alsa_monitor is None:
-            self.alsa_monitor = self.app_settings.getboolean('general', 'alsa_monitor')
+            self.alsa_monitor = self.app_settings.getboolean("general", "alsa_monitor")
         else:
             self.alsa_monitor = alsa_monitor
 
         if ignore_default is None:
-            self.ignore_default = self.app_settings.getboolean('general', 'ignore_default')
+            self.ignore_default = self.app_settings.getboolean("general", "ignore_default")
         else:
             self.ignore_default = ignore_default
 
-        self.gui = Indicator('jack.png', "JACK-Select")
+        self.gui = Indicator("jack.png", "JACK-Select")
         self.gui.set_tooltip(self.tooltip_query)
         self.jack_status = {}
         self.tooltext = "No status available."
@@ -121,38 +129,46 @@ class JackSelectApp:
 
     @property
     def a2j_autostart(self):
-        return (self.app_settings.getboolean('a2jmidi', 'autostart')
-                if self._a2j_autostart is None else self._a2j_autostart)
+        return (
+            self.app_settings.getboolean("a2jmidi", "autostart")
+            if self._a2j_autostart is None
+            else self._a2j_autostart
+        )
 
     @a2j_autostart.setter
     def a2j_autostart(self, flag):
-        if flag != self.app_settings.getboolean('a2jmidi', 'autostart'):
-            self.app_settings.set('a2jmidi', 'autostart', 'yes' if flag else 'no')
+        if flag != self.app_settings.getboolean("a2jmidi", "autostart"):
+            self.app_settings.set("a2jmidi", "autostart", "yes" if flag else "no")
             self.write_settings()
 
     @property
     def a2j_export_hw(self):
-        return (self.app_settings.getboolean('a2jmidi', 'export_hw')
-                if self._a2j_export_hw is None else self._a2j_export_hw)
+        return (
+            self.app_settings.getboolean("a2jmidi", "export_hw")
+            if self._a2j_export_hw is None
+            else self._a2j_export_hw
+        )
 
     @a2j_export_hw.setter
     def a2j_export_hw(self, flag):
-        if flag != self.app_settings.getboolean('a2jmidi', 'export_hw'):
-            self.app_settings.set('a2jmidi', 'export_hw', 'yes' if flag else 'no')
+        if flag != self.app_settings.getboolean("a2jmidi", "export_hw"):
+            self.app_settings.set("a2jmidi", "export_hw", "yes" if flag else "no")
             self.write_settings()
 
     def load_settings(self):
         self.app_settings = configparser.ConfigParser()
-        self.app_settings.read_dict({
-            'general': {
-                'alsa_monitor': 'yes',
-                'ignore_default': 'no',
-            },
-            'a2jmidi': {
-                'autostart': 'no',
-                'export_hw': 'yes',
+        self.app_settings.read_dict(
+            {
+                "general": {
+                    "alsa_monitor": "yes",
+                    "ignore_default": "no",
+                },
+                "a2jmidi": {
+                    "autostart": "no",
+                    "export_hw": "yes",
+                },
             }
-        })
+        )
 
         settings_file = xdgbase.load_first_config(*SETTINGS)
 
@@ -164,7 +180,7 @@ class JackSelectApp:
         try:
             settings_file = os.path.join(xdgbase.save_config_path(SETTINGS[0]), SETTINGS[1])
             log.debug("Writing settings to '%s'.", settings_file)
-            with open(settings_file, 'w') as fp:
+            with open(settings_file, "w") as fp:
                 self.app_settings.write(fp)
         except OSError as exc:
             log.error("Could not write settings file '%s': %s", settings_file, exc)
@@ -180,7 +196,7 @@ class JackSelectApp:
 
         if qjackctl_config:
             mtime = os.path.getmtime(qjackctl_config)
-            changed = mtime > getattr(self, '_conf_mtime', 0)
+            changed = mtime > getattr(self, "_conf_mtime", 0)
 
             if changed:
                 log.debug("JACK configuration file mtime changed or previously unknown.")
@@ -190,10 +206,9 @@ class JackSelectApp:
                 (
                     preset_names,
                     self.jack_settings,
-                    self.default_preset
+                    self.default_preset,
                 ) = get_qjackctl_presets(qjackctl_config, self.ignore_default)
-                self.presets = {name: name.replace('_', ' ')
-                                for name in preset_names}
+                self.presets = {name: name.replace("_", " ") for name in preset_names}
                 self.create_menu()
 
             self._conf_mtime = mtime
@@ -211,27 +226,24 @@ class JackSelectApp:
         return True  # keep function scheduled
 
     def check_alsa_settings(self, preset):
-        engine = self.jack_settings[preset]['engine']
-        driver = self.jack_settings[preset]['driver']
-        if engine['driver'] != 'alsa':
+        engine = self.jack_settings[preset]["engine"]
+        driver = self.jack_settings[preset]["driver"]
+        if engine["driver"] != "alsa":
             return True
 
-        dev = driver.get('device')
+        dev = driver.get("device")
         if dev and dev not in self.alsainfo.devices:
-            log.debug("Device '%s' used by preset '%s' not found.",
-                      dev, preset)
+            log.debug("Device '%s' used by preset '%s' not found.", dev, preset)
             return False
 
-        dev = driver.get('playback')
+        dev = driver.get("playback")
         if dev and dev not in self.alsainfo.playback_devices:
-            log.debug("Playback device '%s' used by preset '%s' not found.",
-                      dev, preset)
+            log.debug("Playback device '%s' used by preset '%s' not found.", dev, preset)
             return False
 
-        dev = driver.get('capture')
+        dev = driver.get("capture")
         if dev and dev not in self.alsainfo.capture_devices:
-            log.debug("Capture device '%s' used by preset '%s' not found.",
-                      dev, preset)
+            log.debug("Capture device '%s' used by preset '%s' not found.", dev, preset)
             return False
 
         return True
@@ -253,33 +265,41 @@ class JackSelectApp:
             self.gui.add_menu_item(None, "No presets found", enabled=False)
 
         self.gui.add_separator()
-        self.menu_stop = self.gui.add_menu_item(self.stop_jack_server,
-                                                "Stop JACK Server",
-                                                icon='stop.png',
-                                                enabled=bool(self.jack_status.get('is_started')))
+        self.menu_stop = self.gui.add_menu_item(
+            self.stop_jack_server,
+            "Stop JACK Server",
+            icon="stop.png",
+            enabled=bool(self.jack_status.get("is_started")),
+        )
 
         if self.a2jctl:
             self.gui.add_separator()
-            self.menu_a2jbridge = self.gui.add_submenu('ALSA-MIDI Bridge')
-            self.menu_a2j_startstop = self.gui.add_menu_item(self.on_start_stop_a2jbridge,
-                                                             "ALSA-MIDI Bridge",
-                                                             icon='midi.png',
-                                                             menu=self.menu_a2jbridge)
-            self.menu_a2j_export_hw = self.gui.add_menu_item(self.on_a2jbridge_set_export_hw,
-                                                             "Export HW Ports",
-                                                             is_check=True,
-                                                             active=self.a2j_export_hw,
-                                                             menu=self.menu_a2jbridge)
-            self.menu_a2j_autostart = self.gui.add_menu_item(self.on_a2jbridge_autostart,
-                                                             "Auto-Start with JACK",
-                                                             is_check=True,
-                                                             active=self.a2j_autostart,
-                                                             menu=self.menu_a2jbridge)
+            self.menu_a2jbridge = self.gui.add_submenu("ALSA-MIDI Bridge")
+            self.menu_a2j_startstop = self.gui.add_menu_item(
+                self.on_start_stop_a2jbridge,
+                "ALSA-MIDI Bridge",
+                icon="midi.png",
+                menu=self.menu_a2jbridge,
+            )
+            self.menu_a2j_export_hw = self.gui.add_menu_item(
+                self.on_a2jbridge_set_export_hw,
+                "Export HW Ports",
+                is_check=True,
+                active=self.a2j_export_hw,
+                menu=self.menu_a2jbridge,
+            )
+            self.menu_a2j_autostart = self.gui.add_menu_item(
+                self.on_a2jbridge_autostart,
+                "Auto-Start with JACK",
+                is_check=True,
+                active=self.a2j_autostart,
+                menu=self.menu_a2jbridge,
+            )
         else:
             self.menu_a2jbridge = None
 
         self.gui.add_separator()
-        self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon='quit.png')
+        self.menu_quit = self.gui.add_menu_item(self.quit, "Quit", icon="quit.png")
         self.gui.menu.show_all()
         self.update_a2jbridge_status()
 
@@ -287,37 +307,38 @@ class JackSelectApp:
         self.gui.on_popup_menu_open()
 
     def update_jack_status(self, value, name=None):
-        jack_started = self.jack_status.get('is_started')
+        jack_started = self.jack_status.get("is_started")
         self.jack_status[name] = value
 
-        if name == 'is_started' and value != jack_started:
+        if name == "is_started" and value != jack_started:
             if value:
-                self.gui.set_icon('started.png')
+                self.gui.set_icon("started.png")
                 log.info("JACK server has started.")
                 self.a2jbridge_autostart()
             else:
-                self.gui.set_icon('stopped.png')
+                self.gui.set_icon("stopped.png")
                 self.tooltext = "JACK server is stopped."
                 log.info(self.tooltext)
 
             self.menu_stop.set_sensitive(value)
             self.update_a2jbridge_status()
 
-        if self.jack_status.get('is_started'):
+        if self.jack_status.get("is_started"):
             try:
                 if self.active_preset:
-                    label = self.presets.get(self.active_preset,
-                                             self.active_preset)
+                    label = self.presets.get(self.active_preset, self.active_preset)
                     self.tooltext = "<b>[%s]</b>\n" % label
                 else:
                     self.tooltext = "<i><b>Unknown configuration</b></i>\n"
 
-                self.tooltext += ("%(samplerate)i Hz / %(period)i frames "
-                                  "(%(latency)0.1f ms)\n" % self.jack_status)
+                self.tooltext += (
+                    "%(samplerate)i Hz / %(period)i frames "
+                    "(%(latency)0.1f ms)\n" % self.jack_status
+                )
                 self.tooltext += "RT: %s " % (
-                    "yes" if self.jack_status.get('is_realtime') else "no")
-                self.tooltext += ("load: %(load)i%% xruns: %(xruns)i" %
-                                  self.jack_status)
+                    "yes" if self.jack_status.get("is_realtime") else "no"
+                )
+                self.tooltext += "load: %(load)i%% xruns: %(xruns)i" % self.jack_status
             except KeyError:
                 self.tooltext = "No status available."
 
@@ -328,7 +349,7 @@ class JackSelectApp:
                 self.menu_a2j_startstop.set_sensitive(False)
                 self.menu_a2j_export_hw.set_sensitive(False)
                 self.menu_a2j_startstop.set_label("ALSA-MIDI Bridge not available")
-            elif self.jack_status.get('is_started'):
+            elif self.jack_status.get("is_started"):
                 # JACK server started
                 if status is None:
                     status = self.a2jctl.is_started()
@@ -352,33 +373,31 @@ class JackSelectApp:
 
     def handle_device_change(self, observer=None, device=None, init=False):
         if device:
-            dev = device.device_path.split('/')[-1]
+            dev = device.device_path.split("/")[-1]
 
-        if init or (device.action in ('change', 'remove')
-                    and dev.startswith('card')):
+        if init or (device.action in ("change", "remove") and dev.startswith("card")):
             try:
-                log.debug("Sound device change signalled. Collecting ALSA "
-                          "device info...")
+                log.debug("Sound device change signalled. Collecting ALSA " "device info...")
                 self.alsainfo = AlsaInfo(deferred=False)
             except Exception as exc:
                 log.warn("Could not get ALSA device list: %s", exc)
                 self.alsainfo = None
 
-            if device and device.action != 'init':
+            if device and device.action != "init":
                 self.load_presets(force=True)
 
     def handle_jackctl_signal(self, *args, signal=None, **kw):
         log.debug("JackCtl signal received: %r", signal)
-        if signal == 'ServerStarted':
-            self.update_jack_status(True, name='is_started')
-        elif signal == 'ServerStopped':
-            self.update_jack_status(False, name='is_started')
+        if signal == "ServerStarted":
+            self.update_jack_status(True, name="is_started")
+        elif signal == "ServerStopped":
+            self.update_jack_status(False, name="is_started")
 
     def handle_a2jctl_signal(self, *args, signal=None, **kw):
-        if signal == 'bridge_started':
+        if signal == "bridge_started":
             log.debug("a2jmidid bridge STARTED signal received.")
             self.update_a2jbridge_status(True)
-        elif signal == 'bridge_stopped':
+        elif signal == "bridge_stopped":
             log.debug("a2jmidid bridge STOPPED signal received.")
             self.update_a2jbridge_status(False)
 
@@ -392,15 +411,15 @@ class JackSelectApp:
         """
         log.warning("JackCtl D-BUS call error handler called.")
         if args and isinstance(args[0], dbus.DBusException):
-            if 'org.freedesktop.DBus.Error.ServiceUnknown' in str(args[0]) and self.jackctl:
+            if "org.freedesktop.DBus.Error.ServiceUnknown" in str(args[0]) and self.jackctl:
                 log.warning("JackCtl D-BUS service vanished. Assuming JACK is stopped.")
-                self.update_jack_status(False, name='is_started')
+                self.update_jack_status(False, name="is_started")
                 self.jackctl = None
                 self.jackcfg = None
                 GObject.timeout_add(INTERVAL_GET_STATS, self.dbus_connect)
 
     def get_jack_stats(self):
-        if self.jackctl and self.jack_status.get('is_started'):
+        if self.jackctl and self.jack_status.get("is_started"):
             try:
                 cb = self.update_jack_status
                 ecb = self.handle_dbus_error
@@ -412,7 +431,7 @@ class JackSelectApp:
                 self.jackctl.get_latency(cb, ecb)
             except dbus.exceptions.DBusException:
                 log.warning("JackCtl D-BUS service failure. Assuming JACK is stopped.")
-                self.update_jack_status(False, name='is_started')
+                self.update_jack_status(False, name="is_started")
 
         return True  # keep function scheduled
 
@@ -436,7 +455,7 @@ class JackSelectApp:
         if m_item:
             preset = m_item.data
         else:
-            preset = kwargs.get('preset')
+            preset = kwargs.get("preset")
 
         if not preset:
             log.warn("Preset must not be null.")
@@ -455,7 +474,7 @@ class JackSelectApp:
             log.error("Unknown preset '%s'. Ignoring it.", preset)
 
     def start_jack_server(self, *args, **kwargs):
-        if self.jackctl and not self.jack_status.get('is_started'):
+        if self.jackctl and not self.jack_status.get("is_started"):
             log.debug("Starting JACK server...")
             try:
                 self.jackctl.start_server()
@@ -463,7 +482,7 @@ class JackSelectApp:
                 log.error("Could not start JACK server: %s", exc)
 
     def stop_jack_server(self, *args, **kwargs):
-        if self.jackctl and self.jack_status.get('is_started'):
+        if self.jackctl and self.jack_status.get("is_started"):
             self.active_preset = None
             log.debug("Stopping JACK server...")
 
@@ -494,11 +513,11 @@ class JackSelectApp:
 
     def on_a2jbridge_set_export_hw(self, widget, *args):
         self.a2j_export_hw = widget.get_active()
-        log.debug("a2jmidid hw export %sabled.", 'en' if self.a2j_autostart else 'dis')
+        log.debug("a2jmidid hw export %sabled.", "en" if self.a2j_autostart else "dis")
 
     def on_a2jbridge_autostart(self, widget, *args):
         self.a2j_autostart = widget.get_active()
-        log.debug("a2jmidid auto-start %sabled.", 'en' if self.a2j_autostart else 'dis')
+        log.debug("a2jmidid auto-start %sabled.", "en" if self.a2j_autostart else "dis")
 
     def a2jbridge_autostart(self):
         if self.a2jctl and self.a2j_autostart and not self.a2jctl.is_started():
@@ -522,54 +541,61 @@ def main(args=None):
     """Main function to be used when called as a script."""
     from dbus.mainloop.glib import DBusGMainLoop
 
-    ap = argparse.ArgumentParser(prog='jack-select', description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog="jack-select", description=__doc__.splitlines()[0])
     ap.add_argument(
-        '--version',
+        "--version",
         action="version",
         version="%%(prog)s %s" % __version__,
-        help="Show program version and exit.")
+        help="Show program version and exit.",
+    )
     ap.add_argument(
-        '--a2j-autostart',
+        "--a2j-autostart",
         action="store_true",
         default=None,
-        help="Autostart ALSA-MIDI to JACK bridge with JACK.")
+        help="Autostart ALSA-MIDI to JACK bridge with JACK.",
+    )
     ap.add_argument(
-        '--a2j-export-hw',
+        "--a2j-export-hw",
         action="store_true",
         default=None,
-        help="Export hardware MIDI ports via ALSA-MIDI to JACK bridge.")
+        help="Export hardware MIDI ports via ALSA-MIDI to JACK bridge.",
+    )
     ap.add_argument(
-        '-a', '--no-alsa-monitor',
+        "-a",
+        "--no-alsa-monitor",
         action="store_false",
         default=None,
-        help="Disable ALSA device monitoring and filtering.")
+        help="Disable ALSA device monitoring and filtering.",
+    )
     ap.add_argument(
-        '-c', '--config',
-        metavar='PATH',
-        help="Path to configuration file (default: <XDG_CONFIG_HOME>/%s/%s)" % DEFAULT_CONFIG)
+        "-c",
+        "--config",
+        metavar="PATH",
+        help="Path to configuration file (default: <XDG_CONFIG_HOME>/%s/%s)" % DEFAULT_CONFIG,
+    )
+    ap.add_argument("-d", "--default", action="store_true", help="Activate default preset.")
     ap.add_argument(
-        '-d', '--default',
-        action="store_true",
-        help="Activate default preset.")
-    ap.add_argument(
-        '-i', '--ignore-default',
+        "-i",
+        "--ignore-default",
         action="store_true",
         default=None,
         help="Ignore the nameless '(default)' preset if any other presets are stored in the "
-             "configuration.")
+        "configuration.",
+    )
     ap.add_argument(
-        '-v', '--verbose',
+        "-v",
+        "--verbose",
         action="store_true",
-        help="Be verbose about what the script does.")
-    ap.add_argument(
-        'preset',
-        nargs='?',
-        help="Configuration preset to activate on startup.")
+        help="Be verbose about what the script does.",
+    )
+    ap.add_argument("preset", nargs="?", help="Configuration preset to activate on startup.")
 
     args = ap.parse_args(args if args is not None else sys.argv[1:])
 
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
-                        format="[%(name)s] %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="[%(name)s] %(levelname)s: %(message)s",
+    )
 
     # the mainloop needs to be set before creating the session bus instance
     DBusGMainLoop(set_as_default=True)
@@ -590,7 +616,7 @@ def main(args=None):
             log.debug("Opening menu...")
             client.OpenMenu()
     except dbus.DBusException as exc:
-        if exc.get_dbus_name().endswith('ServiceUnknown'):
+        if exc.get_dbus_name().endswith("ServiceUnknown"):
             start_gui = True
         else:
             log.warning("Exception: %s", exc)
@@ -598,12 +624,14 @@ def main(args=None):
     log.debug("Args: %s", args)
 
     if start_gui:
-        app = JackSelectApp(bus,
-                            config=args.config,
-                            a2j_autostart=args.a2j_autostart,
-                            a2j_export_hw=args.a2j_export_hw,
-                            alsa_monitor=args.no_alsa_monitor,
-                            ignore_default=args.ignore_default)
+        app = JackSelectApp(
+            bus,
+            config=args.config,
+            a2j_autostart=args.a2j_autostart,
+            a2j_export_hw=args.a2j_export_hw,
+            alsa_monitor=args.no_alsa_monitor,
+            ignore_default=args.ignore_default,
+        )
 
         if args.default:
             # load default preset when mainloop starts
@@ -618,5 +646,5 @@ def main(args=None):
             return "Interrupted."
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main() or 0)

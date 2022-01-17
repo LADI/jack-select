@@ -9,9 +9,9 @@ import dbus.service
 
 log = logging.getLogger(__name__)
 
-DBUS_NAME = 'de.chrisarndt.JackSelectService'
-DBUS_PATH = '/de/chrisarndt/JackSelectApp'
-DBUS_INTERFACE = 'de.chrisarndt.JackSelectInterface'
+DBUS_NAME = "de.chrisarndt.JackSelectService"
+DBUS_PATH = "/de/chrisarndt/JackSelectApp"
+DBUS_INTERFACE = "de.chrisarndt.JackSelectInterface"
 
 
 class JackSelectService(dbus.service.Object):
@@ -25,7 +25,7 @@ class JackSelectService(dbus.service.Object):
         super().__init__(bus, DBUS_PATH)
         self.app = app
 
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE, out_signature='i')
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE, out_signature="i")
     def GetPid(self):
         """Get the PID of the currently running JACK-Select process."""
         log.debug("DBus client requested PID.")
@@ -43,7 +43,7 @@ class JackSelectService(dbus.service.Object):
         log.debug("DBus client requested opening menu.")
         self.app.open_menu()
 
-    @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature='s')
+    @dbus.service.method(dbus_interface=DBUS_INTERFACE, in_signature="s")
     def ActivatePreset(self, preset):
         """Activate the JACK configuration preset with the given name."""
         log.debug("DBus client requested activating preset '%s'." % preset)
