@@ -7,9 +7,9 @@ show a systray icon with a pop-up menu to set JACK configuration from presets
 -----------------------------------------------------------------------------
 
 :Author: Christopher Arndt <chris@chrisarndt.de>
-:Date: 2021-01-15
+:Date: 2022-01-17
 :Copyright: The MIT License (MIT)
-:Version: 1.5.1
+:Version: 1.5.2
 :Manual section: 1
 :Manual group: audio
 

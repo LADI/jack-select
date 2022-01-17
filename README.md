@@ -179,7 +179,7 @@ Please see the file `LICENSE` for more information.
 Author
 ------
 
-**jack-select** was written by Christopher Arndt 2016 - 2021.
+**jack-select** was written by Christopher Arndt 2016 - 2022.
 
 
 Acknowledgements
